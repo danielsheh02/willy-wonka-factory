@@ -2,6 +2,7 @@ package com.example.demo.controllers;
 
 import com.example.demo.dto.TaskRequestDTO;
 import com.example.demo.models.Task;
+import com.example.demo.models.TaskStatus;
 import com.example.demo.services.TaskService;
 
 import java.util.Optional;
@@ -51,5 +52,15 @@ public class TaskController {
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/statuses")
+    public ResponseEntity<String[]> getTaskStatuses() {
+        TaskStatus[] statuses = TaskStatus.values();
+        String[] statusNames = new String[statuses.length];
+        for (int i = 0; i < statuses.length; i++) {
+            statusNames[i] = statuses[i].name();
+        }
+        return ResponseEntity.ok(statusNames);
     }
 }
