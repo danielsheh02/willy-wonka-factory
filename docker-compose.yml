@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  factory-db:
+    container_name: factorydb
+    image: postgres
+    environment:
+      POSTGRES_USER: factorydb
+      POSTGRES_PASSWORD: factorydb
+      POSTGRES_DB: factorydb
+    volumes:
+      - ./backend/pg-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+  factory-backend:
+    container_name: factory-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "7999:7999"
+    depends_on:
+      - factory-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://factorydb:5432/factorydb
+      SPRING_DATASOURCE_USERNAME: factorydb
+      SPRING_DATASOURCE_PASSWORD: factorydb

@@ -1,0 +1,55 @@
+package com.example.demo.controllers;
+
+import com.example.demo.dto.TaskRequestDTO;
+import com.example.demo.models.Task;
+import com.example.demo.services.TaskService;
+
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/tasks")
+public class TaskController {
+    private final TaskService taskService;
+
+    public TaskController(TaskService taskService) {
+        this.taskService = taskService;
+    }
+
+    @GetMapping
+    public Iterable<Task> getAllTasks() {
+        return taskService.getAllTasks();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
+        return taskService.getTaskById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createTask(@RequestBody TaskRequestDTO dto) {
+        Optional<Task> taskOpt = taskService.createTask(dto);
+        if (taskOpt.isPresent()) {
+            return ResponseEntity.ok(taskOpt.get());
+        } else {
+            return ResponseEntity.badRequest().body("Invalid userId");
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTask(@PathVariable Long id, @RequestBody TaskRequestDTO dto) {
+        return taskService.updateTask(id, dto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+        taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
+    }
+}
