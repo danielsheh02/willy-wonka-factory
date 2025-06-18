@@ -1,5 +1,9 @@
 package com.example.demo.models;
 
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -17,11 +21,25 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    public User() {}
+    @ManyToMany(mappedBy = "foremans")
+    @JsonIgnore
+    private Set<Workshop> workshops;
 
-    public User(String username, Role role) {
+    public User() {
+    }
+
+    public User(String username, Role role, Set<Workshop> workshops) {
         this.username = username;
         this.role = role;
+        this.workshops = workshops;
+    }
+
+    public Set<Workshop> getWorkshops() {
+        return workshops;
+    }
+
+    public void setWorkshops(Set<Workshop> workshops) {
+        this.workshops = workshops;
     }
 
     public Long getId() {

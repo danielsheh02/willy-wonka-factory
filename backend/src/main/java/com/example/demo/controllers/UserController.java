@@ -3,6 +3,9 @@ package com.example.demo.controllers;
 import com.example.demo.dto.UserRequestDTO;
 import com.example.demo.models.User;
 import com.example.demo.services.UserService;
+
+import java.util.Optional;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,14 +31,14 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createUser(@RequestBody UserRequestDTO user) {
-        if (userService.existsByUsername(user.getUsername())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("Username exist");
+    public ResponseEntity<?> createUser(@RequestBody UserRequestDTO dto) {
+        Optional<User> userOpt = userService.createUser(dto);
+
+        if (userOpt.isPresent()) {
+            return ResponseEntity.ok(userOpt.get());
+        } else {
+            return ResponseEntity.badRequest().body("");
         }
-        User created_user = userService.createUser(user);
-        return ResponseEntity.ok(created_user);
     }
 
     @PutMapping("/{id}")
