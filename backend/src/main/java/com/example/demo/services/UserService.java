@@ -7,6 +7,7 @@ import com.example.demo.models.Workshop;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.WorkshopRepository;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -17,10 +18,12 @@ import java.util.Set;
 public class UserService {
     private final UserRepository userRepository;
     private final WorkshopRepository workshopRepository;
+    private final PasswordEncoder encoder;
 
-    public UserService(UserRepository userRepository, WorkshopRepository workshopRepository) {
+    public UserService(UserRepository userRepository, WorkshopRepository workshopRepository, PasswordEncoder encoder) {
         this.userRepository = userRepository;
         this.workshopRepository = workshopRepository;
+        this.encoder = encoder;
     }
 
     public Iterable<User> getAllUsers() {
@@ -51,7 +54,7 @@ public class UserService {
         user.setUsername(dto.getUsername());
         user.setRole(dto.getRole());
         user.setWorkshops(workshops);
-        System.out.println(user.getWorkshops());
+        user.setPassword(encoder.encode(dto.getPassword()));
 
         return Optional.of(userRepository.save(user));
     }

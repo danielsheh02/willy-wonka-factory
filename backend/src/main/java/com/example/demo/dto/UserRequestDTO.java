@@ -6,8 +6,17 @@ import com.example.demo.models.Role;
 
 public class UserRequestDTO {
     private String username;
+    private String password;
     private Role role;
     private Set<Long> workshopIds;
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
     public Set<Long> getWorkshopsIds() {
         return workshopIds;

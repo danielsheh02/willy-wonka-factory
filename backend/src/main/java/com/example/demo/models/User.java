@@ -17,6 +17,10 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
+    @JsonIgnore
+    @Column(nullable = false)
+    private String password;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
@@ -25,6 +29,9 @@ public class User {
     @JsonIgnore
     private Set<Workshop> workshops;
 
+    @Column(name = "is_banned")
+    private Boolean isBanned = false;
+
     public User() {
     }
 
@@ -32,6 +39,22 @@ public class User {
         this.username = username;
         this.role = role;
         this.workshops = workshops;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Boolean getIsBanned() {
+        return isBanned;
+    }
+
+    public void setIsBanned(Boolean isBanned) {
+        this.isBanned = isBanned;
     }
 
     public Set<Workshop> getWorkshops() {
