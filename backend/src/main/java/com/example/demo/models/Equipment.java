@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Min;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Equipment {
 
@@ -32,6 +34,7 @@ public class Equipment {
     private LocalDate lastServicedAt;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "workshop_id")
     private Workshop workshop;
 

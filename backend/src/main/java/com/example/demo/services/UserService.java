@@ -56,10 +56,31 @@ public class UserService {
         user.setWorkshops(workshops);
         user.setPassword(encoder.encode(dto.getPassword()));
 
+        // We need this because User do not own Set<Workshop> equipments
+        for (Workshop workshop : workshops) {
+            Set<User> users = workshop.getForemans();
+            users.add(user);
+            workshop.setForemans(users);
+        }
+
         return Optional.of(userRepository.save(user));
     }
 
     public Optional<User> updateUser(Long id, UserRequestDTO dto) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        User user = userOpt.get();
+
+        String newUsername = dto.getUsername();
+        if (!user.getUsername().equals(newUsername)) {
+            if (userRepository.existsByUsername(newUsername)) {
+                throw new UsernameAlreadyExistsException("Username exist");
+            }
+            user.setUsername(newUsername);
+        }
+
         Set<Workshop> workshops = new HashSet<>();
         if (dto.getWorkshopsIds() != null) {
             for (Long idWorkshop : dto.getWorkshopsIds()) {
@@ -70,20 +91,23 @@ public class UserService {
                 workshops.add(workshopOpt.get());
             }
         }
-        return userRepository.findById(id).map(existingUser -> {
-            String newUsername = dto.getUsername();
-            if (!existingUser.getUsername().equals(newUsername)) {
-                if (userRepository.existsByUsername(newUsername)) {
-                    throw new UsernameAlreadyExistsException("Username exist");
-                }
-                existingUser.setUsername(newUsername);
-            }
 
-            existingUser.setRole(dto.getRole());
-            existingUser.setWorkshops(workshops);
+        // We need this because User do not own Set<Workshop> equipments
+        for (Workshop oldWorkshop : user.getWorkshops()) {
+            oldWorkshop.getForemans().remove(user);
+        }
 
-            return userRepository.save(existingUser);
-        });
+        for (Workshop workshop : workshops) {
+            workshop.getForemans().add(user);
+        }
+
+        user.setWorkshops(workshops);
+        user.setRole(dto.getRole());
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            user.setPassword(encoder.encode(dto.getPassword()));
+        }
+
+        return Optional.of(userRepository.save(user));
     }
 
     public void deleteUser(Long id) {

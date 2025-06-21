@@ -36,6 +36,7 @@ public class WorkshopService {
     }
 
     public Optional<Workshop> createWorkshop(WorkshopRequestDTO dto) {
+        // We can do this because Workshop own Set<User> foremans
         Set<User> foremans = new HashSet<>();
         if (dto.getForemanIds() != null) {
             for (Long id : dto.getForemanIds()) {
@@ -47,14 +48,14 @@ public class WorkshopService {
             }
         }
 
-        Set<Equipment> equipment = new HashSet<>();
+        Set<Equipment> equipments = new HashSet<>();
         if (dto.getEquipmentIds() != null) {
             for (Long id : dto.getEquipmentIds()) {
                 Optional<Equipment> eqOpt = equipmentRepository.findById(id);
                 if (eqOpt.isEmpty()) {
                     return Optional.empty();
                 }
-                equipment.add(eqOpt.get());
+                equipments.add(eqOpt.get());
             }
         }
 
@@ -62,7 +63,12 @@ public class WorkshopService {
         workshop.setName(dto.getName());
         workshop.setDescription(dto.getDescription());
         workshop.setForemans(foremans);
-        workshop.setEquipment(equipment);
+        workshop.setEquipments(equipments);
+
+        // We need this because Workshop do not own Set<Equipment> equipments
+        for (Equipment equipment : equipments) {
+            equipment.setWorkshop(workshop);
+        }
 
         return Optional.of(workshopRepository.save(workshop));
     }
@@ -78,6 +84,7 @@ public class WorkshopService {
 
         Workshop workshop = workshopOpt.get();
 
+        // We can do this because Workshop own Set<User> foremans
         Set<User> foremans = new HashSet<>();
         if (dto.getForemanIds() != null) {
             for (Long idForeman : dto.getForemanIds()) {
@@ -89,21 +96,26 @@ public class WorkshopService {
             }
         }
 
-        Set<Equipment> equipment = new HashSet<>();
+        Set<Equipment> equipments = new HashSet<>();
         if (dto.getEquipmentIds() != null) {
             for (Long idEquipment : dto.getEquipmentIds()) {
                 Optional<Equipment> eqOpt = equipmentRepository.findById(idEquipment);
                 if (eqOpt.isEmpty()) {
                     return Optional.empty();
                 }
-                equipment.add(eqOpt.get());
+                equipments.add(eqOpt.get());
             }
         }
 
         workshop.setName(dto.getName());
         workshop.setDescription(dto.getDescription());
         workshop.setForemans(foremans);
-        workshop.setEquipment(equipment);
+        workshop.setEquipments(equipments);
+
+        // We need this because Workshop do not own Set<Equipment> equipments
+        for (Equipment equipment : equipments) {
+            equipment.setWorkshop(workshop);
+        }
 
         return Optional.of(workshopRepository.save(workshop));
     }

@@ -17,21 +17,21 @@ public class Workshop {
     @Column
     private String description;
 
-    @ManyToMany
+    @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(name = "workshop_foremans", joinColumns = @JoinColumn(name = "workshop_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     private Set<User> foremans;
 
-    @OneToMany(mappedBy = "workshop")
-    private Set<Equipment> equipment;
+    @OneToMany(mappedBy = "workshop", cascade = CascadeType.ALL)
+    private Set<Equipment> equipments;
 
     public Workshop() {
     }
 
-    public Workshop(String name, String description, Set<User> foremans, Set<Equipment> equipment) {
+    public Workshop(String name, String description, Set<User> foremans, Set<Equipment> equipments) {
         this.name = name;
         this.description = description;
         this.foremans = foremans;
-        this.equipment = equipment;
+        this.equipments = equipments;
     }
 
     public Long getId() {
@@ -66,11 +66,11 @@ public class Workshop {
         this.foremans = foremans;
     }
 
-    public Set<Equipment> getEquipment() {
-        return equipment;
+    public Set<Equipment> getEquipments() {
+        return equipments;
     }
 
-    public void setEquipment(Set<Equipment> equipment) {
-        this.equipment = equipment;
+    public void setEquipments(Set<Equipment> equipments) {
+        this.equipments = equipments;
     }
 }
