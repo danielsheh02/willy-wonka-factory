@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import com.example.demo.dto.TaskFilterRequestDTO;
 import com.example.demo.dto.TaskRequestDTO;
+import com.example.demo.exceptions.WorkerOverloadedException;
 import com.example.demo.models.*;
 import com.example.demo.models.specifications.TaskSpecification;
 import com.example.demo.repositories.TaskRepository;
@@ -18,6 +19,7 @@ import java.util.Optional;
 public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    public static final int MAX_ALLOWED_TASKS = 5;
 
     public TaskService(TaskRepository taskRepository, UserRepository userRepository) {
         this.taskRepository = taskRepository;
@@ -51,6 +53,11 @@ public class TaskService {
             if (userOpt.isEmpty())
                 return Optional.empty();
             user = userOpt.get();
+
+            long activeTasks = taskRepository.countByUserIdAndStatusNot(user.getId(), TaskStatus.COMPLETED);
+            if (activeTasks >= MAX_ALLOWED_TASKS && !dto.isForce()) {
+                throw new WorkerOverloadedException("User has reached the task limit");
+            }
         }
 
         Task task = new Task();
@@ -82,6 +89,11 @@ public class TaskService {
             if (userOpt.isEmpty())
                 return Optional.empty();
             user = userOpt.get();
+
+            long activeTasks = taskRepository.countByUserIdAndStatusNot(user.getId(), TaskStatus.COMPLETED);
+            if (activeTasks >= MAX_ALLOWED_TASKS && !dto.isForce()) {
+                throw new WorkerOverloadedException("User has reached the task limit");
+            }
         }
 
         if (task.getStatus() != TaskStatus.COMPLETED && dto.getStatus() == TaskStatus.COMPLETED) {
