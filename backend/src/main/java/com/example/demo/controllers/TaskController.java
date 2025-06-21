@@ -1,10 +1,12 @@
 package com.example.demo.controllers;
 
+import com.example.demo.dto.TaskFilterRequestDTO;
 import com.example.demo.dto.TaskRequestDTO;
 import com.example.demo.models.Task;
 import com.example.demo.models.TaskStatus;
 import com.example.demo.services.TaskService;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,11 @@ public class TaskController {
         return taskService.getTaskById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/filter")
+    public List<Task> filterTasks(@RequestBody TaskFilterRequestDTO dto) {
+        return taskService.filterTasks(dto);
     }
 
     @PostMapping
