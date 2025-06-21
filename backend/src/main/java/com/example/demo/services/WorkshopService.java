@@ -107,15 +107,19 @@ public class WorkshopService {
             }
         }
 
+        // We need this because Workshop do not own Set<Equipment> equipments
+        for (Equipment oldEquipment : workshop.getEquipments()) {
+            oldEquipment.setWorkshop(null);
+        }
+
+        for (Equipment equipment : equipments) {
+            equipment.setWorkshop(workshop);
+        }
+
         workshop.setName(dto.getName());
         workshop.setDescription(dto.getDescription());
         workshop.setForemans(foremans);
         workshop.setEquipments(equipments);
-
-        // We need this because Workshop do not own Set<Equipment> equipments
-        for (Equipment equipment : equipments) {
-            equipment.setWorkshop(workshop);
-        }
 
         return Optional.of(workshopRepository.save(workshop));
     }
