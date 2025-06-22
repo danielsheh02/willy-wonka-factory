@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.dto.AuthUserDTO;
 import com.example.demo.dto.UserRequestDTO;
 import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
@@ -43,9 +44,11 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@RequestBody UserRequestDTO dto) {
-
-        Optional<User> userOpt = userService.createUser(dto);
+    public ResponseEntity<?> registerUser(@RequestBody AuthUserDTO dto) {
+        UserRequestDTO userDto = new UserRequestDTO();
+        userDto.setUsername(dto.getUsername());
+        userDto.setPassword(dto.getPassword());
+        Optional<User> userOpt = userService.createUser(userDto);
 
         if (userOpt.isPresent()) {
             return ResponseEntity.ok(userOpt.get());
@@ -55,7 +58,7 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@RequestBody UserRequestDTO dto) {
+    public ResponseEntity<?> authenticateUser(@RequestBody AuthUserDTO dto) {
         try {
             String token = authService.loginUser(dto);
             return ResponseEntity.ok(token);

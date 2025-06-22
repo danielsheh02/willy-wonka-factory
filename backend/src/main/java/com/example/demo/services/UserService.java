@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import com.example.demo.dto.UserRequestDTO;
 import com.example.demo.exceptions.UsernameAlreadyExistsException;
+import com.example.demo.models.Role;
 import com.example.demo.models.User;
 import com.example.demo.models.Workshop;
 import com.example.demo.repositories.UserRepository;
@@ -52,7 +53,11 @@ public class UserService {
 
         User user = new User();
         user.setUsername(dto.getUsername());
-        user.setRole(dto.getRole());
+        if (dto.getRole() != null) {
+            user.setRole(dto.getRole());
+        } else {
+            user.setRole(Role.UNKNOWN);
+        }
         user.setWorkshops(workshops);
         user.setPassword(encoder.encode(dto.getPassword()));
 
@@ -102,7 +107,11 @@ public class UserService {
         }
 
         user.setWorkshops(workshops);
-        user.setRole(dto.getRole());
+        if (dto.getRole() != null) {
+            user.setRole(dto.getRole());
+        } else {
+            user.setRole(Role.UNKNOWN);
+        }
         if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
             user.setPassword(encoder.encode(dto.getPassword()));
         }

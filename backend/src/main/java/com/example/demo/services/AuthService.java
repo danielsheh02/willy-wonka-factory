@@ -5,7 +5,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import com.example.demo.dto.UserRequestDTO;
+import com.example.demo.dto.AuthUserDTO;
 import com.example.demo.security.UserDetailsServiceImpl;
 import com.example.demo.security.jwt.JwtUtils;
 
@@ -26,7 +26,7 @@ public class AuthService {
         this.jwtUtils = jwtUtils;
     }
 
-    public String loginUser(UserRequestDTO dto) {
+    public String loginUser(AuthUserDTO dto) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
         UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(dto.getUsername());
