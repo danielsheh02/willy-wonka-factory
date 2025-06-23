@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.AuthUserDTO;
+import com.example.demo.dto.JwtResponse;
 import com.example.demo.dto.UserRequestDTO;
 import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
@@ -60,8 +61,8 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody AuthUserDTO dto) {
         try {
-            String token = authService.loginUser(dto);
-            return ResponseEntity.ok(token);
+            JwtResponse jwtResponse = authService.loginUser(dto);
+            return ResponseEntity.ok(jwtResponse);
         } catch (BadCredentialsException e) {
             return new ResponseEntity<>(new AuthExc("Invalid username or password"), HttpStatus.UNAUTHORIZED);
         }
