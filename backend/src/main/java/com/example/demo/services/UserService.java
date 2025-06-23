@@ -1,10 +1,13 @@
 package com.example.demo.services;
 
-import com.example.demo.dto.UserRequestDTO;
+import com.example.demo.dto.request.UserRequestDTO;
+import com.example.demo.dto.response.UserResponseDTO;
+import com.example.demo.dto.short_db.WorkshopShortDTO;
 import com.example.demo.exceptions.UsernameAlreadyExistsException;
 import com.example.demo.models.Role;
 import com.example.demo.models.User;
 import com.example.demo.models.Workshop;
+import com.example.demo.models.WorkshopToUser;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.WorkshopRepository;
 
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -27,28 +31,39 @@ public class UserService {
         this.encoder = encoder;
     }
 
-    public Iterable<User> getAllUsers() {
-        return userRepository.findAll();
+    private UserResponseDTO toUserDTO(User user) {
+        Set<WorkshopShortDTO> workshops = user.getWorkshopLinks()
+                .stream()
+                .map(WorkshopToUser::getWorkshop)
+                .map(workshop -> new WorkshopShortDTO(
+                        workshop.getId(),
+                        workshop.getName(),
+                        workshop.getDescription()))
+                .collect(Collectors.toSet());
+    
+        return new UserResponseDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getRole(),
+                user.getIsBanned(),
+                workshops);
     }
 
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
+    public Iterable<UserResponseDTO> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(this::toUserDTO)
+                .toList();
     }
 
-    public Optional<User> createUser(UserRequestDTO dto) {
+    public Optional<UserResponseDTO> getUserById(Long id) {
+        return userRepository.findById(id)
+                .map(this::toUserDTO);
+    }
+
+    public Optional<UserResponseDTO> createUser(UserRequestDTO dto) {
         if (userRepository.existsByUsername(dto.getUsername())) {
             throw new UsernameAlreadyExistsException("Username exist");
-        }
-
-        Set<Workshop> workshops = new HashSet<>();
-        if (dto.getWorkshopsIds() != null) {
-            for (Long idWorkshop : dto.getWorkshopsIds()) {
-                Optional<Workshop> workshopOpt = workshopRepository.findById(idWorkshop);
-                if (workshopOpt.isEmpty()) {
-                    return Optional.empty();
-                }
-                workshops.add(workshopOpt.get());
-            }
         }
 
         User user = new User();
@@ -58,20 +73,31 @@ public class UserService {
         } else {
             user.setRole(Role.UNKNOWN);
         }
-        user.setWorkshops(workshops);
         user.setPassword(encoder.encode(dto.getPassword()));
 
-        // We need this because User do not own Set<Workshop> equipments
-        for (Workshop workshop : workshops) {
-            Set<User> users = workshop.getForemans();
-            users.add(user);
-            workshop.setForemans(users);
+        Set<WorkshopToUser> links = new HashSet<>();
+        if (dto.getWorkshopsIds() != null) {
+            for (Long idWorkshop : dto.getWorkshopsIds()) {
+                Optional<Workshop> workshopOpt = workshopRepository.findById(idWorkshop);
+                if (workshopOpt.isEmpty()) {
+                    return Optional.empty();
+                }
+
+                WorkshopToUser link = new WorkshopToUser();
+                link.setUser(user);
+                link.setWorkshop(workshopOpt.get());
+
+                links.add(link);
+            }
         }
 
-        return Optional.of(userRepository.save(user));
+        user.setWorkshopLinks(links);
+
+        User saved = userRepository.save(user);
+        return Optional.of(toUserDTO(saved));
     }
 
-    public Optional<User> updateUser(Long id, UserRequestDTO dto) {
+    public Optional<UserResponseDTO> updateUser(Long id, UserRequestDTO dto) {
         Optional<User> userOpt = userRepository.findById(id);
         if (userOpt.isEmpty()) {
             return Optional.empty();
@@ -86,27 +112,6 @@ public class UserService {
             user.setUsername(newUsername);
         }
 
-        Set<Workshop> workshops = new HashSet<>();
-        if (dto.getWorkshopsIds() != null) {
-            for (Long idWorkshop : dto.getWorkshopsIds()) {
-                Optional<Workshop> workshopOpt = workshopRepository.findById(idWorkshop);
-                if (workshopOpt.isEmpty()) {
-                    return Optional.empty();
-                }
-                workshops.add(workshopOpt.get());
-            }
-        }
-
-        // We need this because User do not own Set<Workshop> equipments
-        for (Workshop oldWorkshop : user.getWorkshops()) {
-            oldWorkshop.getForemans().remove(user);
-        }
-
-        for (Workshop workshop : workshops) {
-            workshop.getForemans().add(user);
-        }
-
-        user.setWorkshops(workshops);
         if (dto.getRole() != null) {
             user.setRole(dto.getRole());
         } else {
@@ -116,7 +121,27 @@ public class UserService {
             user.setPassword(encoder.encode(dto.getPassword()));
         }
 
-        return Optional.of(userRepository.save(user));
+        Set<WorkshopToUser> links = new HashSet<>();
+        if (dto.getWorkshopsIds() != null) {
+            for (Long idWorkshop : dto.getWorkshopsIds()) {
+                Optional<Workshop> workshopOpt = workshopRepository.findById(idWorkshop);
+                if (workshopOpt.isEmpty()) {
+                    return Optional.empty();
+                }
+
+                WorkshopToUser link = new WorkshopToUser();
+                link.setUser(user);
+                link.setWorkshop(workshopOpt.get());
+
+                links.add(link);
+            }
+        }
+
+        user.getWorkshopLinks().clear();
+        user.getWorkshopLinks().addAll(links);
+
+        User saved = userRepository.save(user);
+        return Optional.of(toUserDTO(saved));
     }
 
     public void deleteUser(Long id) {

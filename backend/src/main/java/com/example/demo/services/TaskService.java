@@ -1,7 +1,7 @@
 package com.example.demo.services;
 
-import com.example.demo.dto.TaskFilterRequestDTO;
-import com.example.demo.dto.TaskRequestDTO;
+import com.example.demo.dto.request.TaskFilterRequestDTO;
+import com.example.demo.dto.request.TaskRequestDTO;
 import com.example.demo.exceptions.WorkerOverloadedException;
 import com.example.demo.models.*;
 import com.example.demo.models.specifications.TaskSpecification;

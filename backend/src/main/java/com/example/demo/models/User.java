@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -25,9 +26,9 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @ManyToMany(mappedBy = "foremans")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private Set<Workshop> workshops;
+    private Set<WorkshopToUser> workshopLinks = new HashSet<>();
 
     @Column(name = "is_banned")
     private Boolean isBanned = false;
@@ -35,10 +36,9 @@ public class User {
     public User() {
     }
 
-    public User(String username, Role role, Set<Workshop> workshops) {
+    public User(String username, Role role) {
         this.username = username;
         this.role = role;
-        this.workshops = workshops;
     }
 
     public String getPassword() {
@@ -55,14 +55,6 @@ public class User {
 
     public void setIsBanned(Boolean isBanned) {
         this.isBanned = isBanned;
-    }
-
-    public Set<Workshop> getWorkshops() {
-        return workshops;
-    }
-
-    public void setWorkshops(Set<Workshop> workshops) {
-        this.workshops = workshops;
     }
 
     public Long getId() {
@@ -87,5 +79,13 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public Set<WorkshopToUser> getWorkshopLinks() {
+        return workshopLinks;
+    }
+
+    public void setWorkshopLinks(Set<WorkshopToUser> workshopLinks) {
+        this.workshopLinks = workshopLinks;
     }
 }

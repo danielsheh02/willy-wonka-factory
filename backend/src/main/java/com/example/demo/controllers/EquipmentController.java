@@ -1,7 +1,7 @@
 package com.example.demo.controllers;
 
-import com.example.demo.dto.EquipmentRequestDTO;
-import com.example.demo.models.Equipment;
+import com.example.demo.dto.request.EquipmentRequestDTO;
+import com.example.demo.dto.response.EquipmentResponseDTO;
 import com.example.demo.models.EquipmentStatus;
 import com.example.demo.services.EquipmentService;
 
@@ -21,12 +21,12 @@ public class EquipmentController {
     }
 
     @GetMapping
-    public Iterable<Equipment> getAllEquipment() {
+    public Iterable<?> getAllEquipment() {
         return equipmentService.getAllEquipment();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Equipment> getEquipmentById(@PathVariable Long id) {
+    public ResponseEntity<?> getEquipmentById(@PathVariable Long id) {
         return equipmentService.getEquipmentById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -34,7 +34,7 @@ public class EquipmentController {
 
     @PostMapping
     public ResponseEntity<?> createEquipment(@RequestBody EquipmentRequestDTO dto) {
-        Optional<Equipment> equipmentOpt = equipmentService.createEquipment(dto);
+        Optional<EquipmentResponseDTO> equipmentOpt = equipmentService.createEquipment(dto);
         if (equipmentOpt.isPresent()) {
             return ResponseEntity.ok(equipmentOpt.get());
         } else {

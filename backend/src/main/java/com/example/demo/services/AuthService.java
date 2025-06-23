@@ -7,8 +7,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import com.example.demo.dto.AuthUserDTO;
-import com.example.demo.dto.JwtResponse;
+import com.example.demo.dto.request.AuthUserRequestDTO;
+import com.example.demo.dto.response.JwtResponse;
 import com.example.demo.security.UserDetailsServiceImpl;
 import com.example.demo.security.jwt.JwtUtils;
 
@@ -29,7 +29,7 @@ public class AuthService {
         this.jwtUtils = jwtUtils;
     }
 
-    public JwtResponse loginUser(AuthUserDTO dto) {
+    public JwtResponse loginUser(AuthUserRequestDTO dto) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
         UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(dto.getUsername());

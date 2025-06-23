@@ -1,6 +1,6 @@
-package com.example.demo.dto;
+package com.example.demo.dto.request;
 
-public class AuthUserDTO {
+public class AuthUserRequestDTO {
     private String username;
     private String password;
 

@@ -3,6 +3,8 @@ package com.example.demo.models;
 import jakarta.persistence.*;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "workshops")
 public class Workshop {
@@ -17,9 +19,9 @@ public class Workshop {
     @Column
     private String description;
 
-    @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    @JoinTable(name = "workshop_foremans", joinColumns = @JoinColumn(name = "workshop_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-    private Set<User> foremans;
+    @OneToMany(mappedBy = "workshop", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Set<WorkshopToUser> foremanLinks;
 
     @OneToMany(mappedBy = "workshop", cascade = CascadeType.ALL)
     private Set<Equipment> equipments;
@@ -30,7 +32,6 @@ public class Workshop {
     public Workshop(String name, String description, Set<User> foremans, Set<Equipment> equipments) {
         this.name = name;
         this.description = description;
-        this.foremans = foremans;
         this.equipments = equipments;
     }
 
@@ -58,19 +59,19 @@ public class Workshop {
         this.description = description;
     }
 
-    public Set<User> getForemans() {
-        return foremans;
-    }
-
-    public void setForemans(Set<User> foremans) {
-        this.foremans = foremans;
-    }
-
     public Set<Equipment> getEquipments() {
         return equipments;
     }
 
     public void setEquipments(Set<Equipment> equipments) {
         this.equipments = equipments;
+    }
+
+    public Set<WorkshopToUser> getForemanLinks() {
+        return foremanLinks;
+    }
+
+    public void setForemanLinks(Set<WorkshopToUser> foremanLinks) {
+        this.foremanLinks = foremanLinks;
     }
 }

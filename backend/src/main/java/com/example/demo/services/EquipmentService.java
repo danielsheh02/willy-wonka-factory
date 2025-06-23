@@ -1,6 +1,8 @@
 package com.example.demo.services;
 
-import com.example.demo.dto.EquipmentRequestDTO;
+import com.example.demo.dto.request.EquipmentRequestDTO;
+import com.example.demo.dto.response.EquipmentResponseDTO;
+import com.example.demo.dto.short_db.WorkshopShortDTO;
 import com.example.demo.models.Equipment;
 import com.example.demo.models.Workshop;
 import com.example.demo.repositories.EquipmentRepository;
@@ -22,15 +24,38 @@ public class EquipmentService {
         this.workshopRepository = workshopRepository;
     }
 
-    public Iterable<Equipment> getAllEquipment() {
-        return equipmentRepository.findAll();
+    private EquipmentResponseDTO toEquipmentDTO(Equipment equipment) {
+        WorkshopShortDTO workshopDTO = null;
+        if (equipment.getWorkshop() != null) {
+            workshopDTO = new WorkshopShortDTO(
+                    equipment.getWorkshop().getId(),
+                    equipment.getWorkshop().getName(),
+                    equipment.getWorkshop().getDescription());
+        }
+
+        return new EquipmentResponseDTO(
+                equipment.getId(),
+                equipment.getName(),
+                equipment.getDescription(),
+                equipment.getModel(),
+                equipment.getStatus(),
+                equipment.getHealth(),
+                equipment.getTemperature(),
+                equipment.getLastServicedAt(),
+                workshopDTO);
     }
 
-    public Optional<Equipment> getEquipmentById(Long id) {
-        return equipmentRepository.findById(id);
+    public Iterable<EquipmentResponseDTO> getAllEquipment() {
+        return equipmentRepository.findAll().stream()
+                .map(this::toEquipmentDTO)
+                .toList();
     }
 
-    public Optional<Equipment> createEquipment(EquipmentRequestDTO dto) {
+    public Optional<EquipmentResponseDTO> getEquipmentById(Long id) {
+        return equipmentRepository.findById(id).map(this::toEquipmentDTO);
+    }
+
+    public Optional<EquipmentResponseDTO> createEquipment(EquipmentRequestDTO dto) {
         Workshop workshop = null;
         if (dto.getWorkshopId() != null) {
             Optional<Workshop> workshopOpt = workshopRepository.findById(dto.getWorkshopId());
@@ -48,10 +73,12 @@ public class EquipmentService {
         equipment.setTemperature(dto.getTemperature());
         equipment.setLastServicedAt(dto.getLastServicedAt());
         equipment.setWorkshop(workshop);
-        return Optional.of(equipmentRepository.save(equipment));
+
+        Equipment saved = equipmentRepository.save(equipment);
+        return Optional.of(toEquipmentDTO(saved));
     }
 
-    public Optional<Equipment> updateEquipment(Long id, EquipmentRequestDTO dto) {
+    public Optional<EquipmentResponseDTO> updateEquipment(Long id, EquipmentRequestDTO dto) {
         Optional<Equipment> equipmentOpt = equipmentRepository.findById(id);
         if (equipmentOpt.isEmpty())
             return Optional.empty();
@@ -74,7 +101,8 @@ public class EquipmentService {
         equipment.setTemperature(dto.getTemperature());
         equipment.setLastServicedAt(dto.getLastServicedAt());
         equipment.setWorkshop(workshop);
-        return Optional.of(equipmentRepository.save(equipment));
+        Equipment saved = equipmentRepository.save(equipment);
+        return Optional.of(toEquipmentDTO(saved));
     }
 
     public void deleteEquipment(Long id) {

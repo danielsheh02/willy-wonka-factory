@@ -1,7 +1,7 @@
 package com.example.demo.controllers;
 
-import com.example.demo.dto.WorkshopRequestDTO;
-import com.example.demo.models.Workshop;
+import com.example.demo.dto.request.WorkshopRequestDTO;
+import com.example.demo.dto.response.WorkshopResponseDTO;
 import com.example.demo.services.WorkshopService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +19,12 @@ public class WorkshopController {
     }
 
     @GetMapping
-    public Iterable<Workshop> getAll() {
+    public Iterable<?> getAll() {
         return workshopService.getAllWorkshops();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Workshop> getById(@PathVariable Long id) {
+    public ResponseEntity<?> getById(@PathVariable Long id) {
         return workshopService.getWorkshopById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -32,9 +32,9 @@ public class WorkshopController {
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody WorkshopRequestDTO dto) {
-        Optional<Workshop> workShowOpt = workshopService.createWorkshop(dto);
-        if (workShowOpt.isPresent()) {
-            return ResponseEntity.ok(workShowOpt.get());
+        Optional<WorkshopResponseDTO> workshopOpt = workshopService.createWorkshop(dto);
+        if (workshopOpt.isPresent()) {
+            return ResponseEntity.ok(workshopOpt.get());
         } else {
             return ResponseEntity.badRequest().body("Invalid foreman IDs");
         }

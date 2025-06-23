@@ -1,7 +1,7 @@
 package com.example.demo.controllers;
 
-import com.example.demo.dto.TaskFilterRequestDTO;
-import com.example.demo.dto.TaskRequestDTO;
+import com.example.demo.dto.request.TaskFilterRequestDTO;
+import com.example.demo.dto.request.TaskRequestDTO;
 import com.example.demo.models.Task;
 import com.example.demo.models.TaskStatus;
 import com.example.demo.services.TaskService;

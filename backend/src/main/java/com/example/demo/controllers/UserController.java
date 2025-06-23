@@ -1,7 +1,7 @@
 package com.example.demo.controllers;
 
-import com.example.demo.dto.UserRequestDTO;
-import com.example.demo.models.User;
+import com.example.demo.dto.request.UserRequestDTO;
+import com.example.demo.dto.response.UserResponseDTO;
 import com.example.demo.services.UserService;
 
 import java.util.Optional;
@@ -19,12 +19,12 @@ public class UserController {
     }
 
     @GetMapping
-    public Iterable<User> getAllUsers() {
+    public Iterable<?> getAllUsers() {
         return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -32,7 +32,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody UserRequestDTO dto) {
-        Optional<User> userOpt = userService.createUser(dto);
+        Optional<UserResponseDTO> userOpt = userService.createUser(dto);
 
         if (userOpt.isPresent()) {
             return ResponseEntity.ok(userOpt.get());
@@ -42,7 +42,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody UserRequestDTO user) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserRequestDTO user) {
         return userService.updateUser(id, user)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

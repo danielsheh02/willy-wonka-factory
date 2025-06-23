@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -53,19 +54,19 @@ public class DataInitializer implements CommandLineRunner {
         worker.setUsername("worker1");
         worker.setPassword(encodedPassword);
         worker.setRole(Role.WORKER);
-        worker.setWorkshops(Collections.emptySet());
+        // worker.setWorkshops(Collections.emptySet());
 
         User foreman = new User();
         foreman.setUsername("foreman1");
         foreman.setPassword(encodedPassword);
         foreman.setRole(Role.FOREMAN);
-        foreman.setWorkshops(Collections.emptySet());
+        // foreman.setWorkshops(Collections.emptySet());
 
         User unknown = new User();
         unknown.setUsername("unknown1");
         unknown.setPassword(encodedPassword);
         unknown.setRole(Role.UNKNOWN);
-        unknown.setWorkshops(Collections.emptySet());
+        // unknown.setWorkshops(Collections.emptySet());
 
         worker = userRepository.save(worker);
         foreman = userRepository.save(foreman);
@@ -100,23 +101,38 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("foreman1 / password");
         System.out.println("unknown1 / password");
 
+        Set<WorkshopToUser> foremanLinks1 = new HashSet<>();
         Workshop w1 = new Workshop();
         w1.setName("Цех упаковки");
         w1.setDescription("Отвечает за упаковку готовой продукции");
-        w1.setForemans(Set.of(foreman));
         w1.setEquipments(Collections.emptySet());
+        WorkshopToUser link1 = new WorkshopToUser();
+        link1.setWorkshop(w1);
+        link1.setUser(foreman);
+        foremanLinks1.add(link1);
+        w1.setForemanLinks(foremanLinks1);
 
+        Set<WorkshopToUser> foremanLinks2 = new HashSet<>();
         Workshop w2 = new Workshop();
         w2.setName("Цех глазирования");
         w2.setDescription("Нанесение шоколадной глазури на изделия");
-        w2.setForemans(Set.of(foreman));
         w2.setEquipments(Collections.emptySet());
+        WorkshopToUser link2 = new WorkshopToUser();
+        link2.setWorkshop(w2);
+        link2.setUser(foreman);
+        foremanLinks2.add(link2);
+        w2.setForemanLinks(foremanLinks2);
 
+        Set<WorkshopToUser> foremanLinks3 = new HashSet<>();
         Workshop w3 = new Workshop();
         w3.setName("Цех экспериментов");
         w3.setDescription("Тестирование новых рецептов");
-        w3.setForemans(Set.of(unknown));
         w3.setEquipments(Collections.emptySet());
+        WorkshopToUser link3 = new WorkshopToUser();
+        link3.setWorkshop(w3);
+        link3.setUser(worker);
+        foremanLinks3.add(link3);
+        w3.setForemanLinks(foremanLinks3);
 
         w1 = workshopRepository.save(w1);
         w2 = workshopRepository.save(w2);

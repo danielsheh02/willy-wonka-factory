@@ -1,9 +1,13 @@
 package com.example.demo.services;
 
-import com.example.demo.dto.WorkshopRequestDTO;
+import com.example.demo.dto.request.WorkshopRequestDTO;
+import com.example.demo.dto.response.WorkshopResponseDTO;
+import com.example.demo.dto.short_db.EquipmentShortDTO;
+import com.example.demo.dto.short_db.UserShortDTO;
 import com.example.demo.models.Equipment;
 import com.example.demo.models.User;
 import com.example.demo.models.Workshop;
+import com.example.demo.models.WorkshopToUser;
 import com.example.demo.repositories.EquipmentRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.WorkshopRepository;
@@ -12,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class WorkshopService {
@@ -27,26 +32,71 @@ public class WorkshopService {
         this.equipmentRepository = equipmentRepository;
     }
 
-    public Iterable<Workshop> getAllWorkshops() {
-        return workshopRepository.findAll();
+    public EquipmentShortDTO toEquipmentDTO(Equipment equipment) {
+        return new EquipmentShortDTO(
+                equipment.getId(),
+                equipment.getName(),
+                equipment.getDescription(),
+                equipment.getModel(),
+                equipment.getStatus(),
+                equipment.getHealth(),
+                equipment.getTemperature(),
+                equipment.getLastServicedAt());
     }
 
-    public Optional<Workshop> getWorkshopById(Long id) {
-        return workshopRepository.findById(id);
+    private WorkshopResponseDTO toWorkshopDTO(Workshop workshop) {
+        Set<UserShortDTO> foremans = workshop.getForemanLinks()
+                .stream()
+                .map(WorkshopToUser::getUser)
+                .map(user -> new UserShortDTO(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getRole(),
+                        user.getIsBanned()))
+                .collect(Collectors.toSet());
+
+        Set<EquipmentShortDTO> equipmentDTOs = workshop.getEquipments()
+                .stream()
+                .map(this::toEquipmentDTO)
+                .collect(Collectors.toSet());
+
+        return new WorkshopResponseDTO(
+                workshop.getId(),
+                workshop.getName(),
+                workshop.getDescription(),
+                foremans, equipmentDTOs);
     }
 
-    public Optional<Workshop> createWorkshop(WorkshopRequestDTO dto) {
-        // We can do this because Workshop own Set<User> foremans
-        Set<User> foremans = new HashSet<>();
+    public Iterable<WorkshopResponseDTO> getAllWorkshops() {
+        return workshopRepository.findAll()
+                .stream()
+                .map(this::toWorkshopDTO)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<WorkshopResponseDTO> getWorkshopById(Long id) {
+        return workshopRepository.findById(id)
+                .map(this::toWorkshopDTO);
+    }
+
+    public Optional<WorkshopResponseDTO> createWorkshop(WorkshopRequestDTO dto) {
+        Workshop workshop = new Workshop();
+        workshop.setName(dto.getName());
+        workshop.setDescription(dto.getDescription());
+        Set<WorkshopToUser> foremanLinks = new HashSet<>();
         if (dto.getForemanIds() != null) {
-            for (Long id : dto.getForemanIds()) {
-                Optional<User> userOpt = userRepository.findById(id);
+            for (Long userId : dto.getForemanIds()) {
+                Optional<User> userOpt = userRepository.findById(userId);
                 if (userOpt.isEmpty()) {
                     return Optional.empty();
                 }
-                foremans.add(userOpt.get());
+                WorkshopToUser link = new WorkshopToUser();
+                link.setWorkshop(workshop);
+                link.setUser(userOpt.get());
+                foremanLinks.add(link);
             }
         }
+        workshop.setForemanLinks(foremanLinks);
 
         Set<Equipment> equipments = new HashSet<>();
         if (dto.getEquipmentIds() != null) {
@@ -59,10 +109,6 @@ public class WorkshopService {
             }
         }
 
-        Workshop workshop = new Workshop();
-        workshop.setName(dto.getName());
-        workshop.setDescription(dto.getDescription());
-        workshop.setForemans(foremans);
         workshop.setEquipments(equipments);
 
         // We need this because Workshop do not own Set<Equipment> equipments
@@ -70,31 +116,34 @@ public class WorkshopService {
             equipment.setWorkshop(workshop);
         }
 
-        return Optional.of(workshopRepository.save(workshop));
+        Workshop saved = workshopRepository.save(workshop);
+        return Optional.of(toWorkshopDTO(saved));
     }
 
-    public void deleteWorkshop(Long id) {
-        workshopRepository.deleteById(id);
-    }
-
-    public Optional<Workshop> updateWorkshop(Long id, WorkshopRequestDTO dto) {
+    public Optional<WorkshopResponseDTO> updateWorkshop(Long id, WorkshopRequestDTO dto) {
         Optional<Workshop> workshopOpt = workshopRepository.findById(id);
         if (workshopOpt.isEmpty())
             return Optional.empty();
 
         Workshop workshop = workshopOpt.get();
 
-        // We can do this because Workshop own Set<User> foremans
-        Set<User> foremans = new HashSet<>();
+        workshop.setName(dto.getName());
+        workshop.setDescription(dto.getDescription());
+        Set<WorkshopToUser> foremanLinks = new HashSet<>();
         if (dto.getForemanIds() != null) {
-            for (Long idForeman : dto.getForemanIds()) {
-                Optional<User> userOpt = userRepository.findById(idForeman);
+            for (Long userId : dto.getForemanIds()) {
+                Optional<User> userOpt = userRepository.findById(userId);
                 if (userOpt.isEmpty()) {
                     return Optional.empty();
                 }
-                foremans.add(userOpt.get());
+                WorkshopToUser link = new WorkshopToUser();
+                link.setWorkshop(workshop);
+                link.setUser(userOpt.get());
+                foremanLinks.add(link);
             }
         }
+        workshop.getForemanLinks().clear();
+        workshop.getForemanLinks().addAll(foremanLinks);
 
         Set<Equipment> equipments = new HashSet<>();
         if (dto.getEquipmentIds() != null) {
@@ -107,7 +156,6 @@ public class WorkshopService {
             }
         }
 
-        // We need this because Workshop do not own Set<Equipment> equipments
         for (Equipment oldEquipment : workshop.getEquipments()) {
             oldEquipment.setWorkshop(null);
         }
@@ -116,11 +164,13 @@ public class WorkshopService {
             equipment.setWorkshop(workshop);
         }
 
-        workshop.setName(dto.getName());
-        workshop.setDescription(dto.getDescription());
-        workshop.setForemans(foremans);
         workshop.setEquipments(equipments);
 
-        return Optional.of(workshopRepository.save(workshop));
+        Workshop saved = workshopRepository.save(workshop);
+        return Optional.of(toWorkshopDTO(saved));
+    }
+
+    public void deleteWorkshop(Long id) {
+        workshopRepository.deleteById(id);
     }
 }
