@@ -59,11 +59,11 @@ public class SecurityConfig {
                                 "/api/auth/signin",
                                 "/api/auth/signup")
                         .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyRole("FOREMAN", "WORKER", "UNKNOWN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyRole("FOREMAN", "WORKER", "UNKNOWN")
+                        .requestMatchers(HttpMethod.POST, "/api/**").hasRole("FOREMAN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("FOREMAN")
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("FOREMAN", "WORKER", "UNKNOWN")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("FOREMAN", "WORKER", "UNKNOWN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("FOREMAN", "WORKER", "UNKNOWN")
+                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("FOREMAN", "WORKER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("FOREMAN", "WORKER")
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").hasAnyRole("FOREMAN",
                                 "WORKER", "UNKNOWN")
                         .anyRequest().authenticated())
