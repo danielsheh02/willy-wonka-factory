@@ -11,6 +11,10 @@ import com.example.demo.models.WorkshopToUser;
 import com.example.demo.repositories.EquipmentRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.WorkshopRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -72,6 +76,12 @@ public class WorkshopService {
                 .stream()
                 .map(this::toWorkshopDTO)
                 .collect(Collectors.toList());
+    }
+
+    public Page<WorkshopResponseDTO> getAllWorkshopsPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return workshopRepository.findAll(pageable)
+                .map(this::toWorkshopDTO);
     }
 
     public Optional<WorkshopResponseDTO> getWorkshopById(Long id) {

@@ -3,6 +3,8 @@ package com.example.demo.controllers;
 import com.example.demo.dto.request.WorkshopRequestDTO;
 import com.example.demo.dto.response.WorkshopResponseDTO;
 import com.example.demo.services.WorkshopService;
+
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +30,14 @@ public class WorkshopController {
         return workshopService.getWorkshopById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<?> getAllWorkshopsPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<WorkshopResponseDTO> workshopsPage = workshopService.getAllWorkshopsPaged(page, size);
+        return ResponseEntity.ok(workshopsPage);
     }
 
     @PostMapping

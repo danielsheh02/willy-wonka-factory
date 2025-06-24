@@ -8,6 +8,9 @@ import com.example.demo.models.Workshop;
 import com.example.demo.repositories.EquipmentRepository;
 import com.example.demo.repositories.WorkshopRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -49,6 +52,12 @@ public class EquipmentService {
         return equipmentRepository.findAll().stream()
                 .map(this::toEquipmentDTO)
                 .toList();
+    }
+
+    public Page<EquipmentResponseDTO> getAllEquipmentsPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return equipmentRepository.findAll(pageable)
+                .map(this::toEquipmentDTO);
     }
 
     public Optional<EquipmentResponseDTO> getEquipmentById(Long id) {

@@ -6,6 +6,7 @@ import com.example.demo.services.UserService;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,14 @@ public class UserController {
     @GetMapping
     public Iterable<?> getAllUsers() {
         return userService.getAllUsers();
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<?> getAllUsersPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<UserResponseDTO> usersPage = userService.getAllUsersPaged(page, size);
+        return ResponseEntity.ok(usersPage);
     }
 
     @GetMapping("/{id}")

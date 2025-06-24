@@ -8,6 +8,9 @@ import com.example.demo.models.specifications.TaskSpecification;
 import com.example.demo.repositories.TaskRepository;
 import com.example.demo.repositories.UserRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +35,25 @@ public class TaskService {
 
     public Optional<Task> getTaskById(Long id) {
         return taskRepository.findById(id);
+    }
+
+    public Page<Task> getAllTasksPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return taskRepository.findAll(pageable);
+    }
+
+    public Page<Task> filterTasksPaged(TaskFilterRequestDTO dto, int page, int size) {
+        Specification<Task> spec = TaskSpecification.withFilters(
+                dto.getName(),
+                dto.getCreatedAfter(),
+                dto.getCreatedBefore(),
+                dto.getCompletedAfter(),
+                dto.getCompletedBefore(),
+                dto.getUserId(),
+                dto.getStatus());
+
+        Pageable pageable = PageRequest.of(page, size);
+        return taskRepository.findAll(spec, pageable);
     }
 
     public List<Task> filterTasks(TaskFilterRequestDTO dto) {
@@ -109,4 +131,5 @@ public class TaskService {
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
     }
+
 }

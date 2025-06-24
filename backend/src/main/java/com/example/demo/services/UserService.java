@@ -11,6 +11,9 @@ import com.example.demo.models.WorkshopToUser;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.WorkshopRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +43,7 @@ public class UserService {
                         workshop.getName(),
                         workshop.getDescription()))
                 .collect(Collectors.toSet());
-    
+
         return new UserResponseDTO(
                 user.getId(),
                 user.getUsername(),
@@ -58,6 +61,12 @@ public class UserService {
 
     public Optional<UserResponseDTO> getUserById(Long id) {
         return userRepository.findById(id)
+                .map(this::toUserDTO);
+    }
+
+    public Page<UserResponseDTO> getAllUsersPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userRepository.findAll(pageable)
                 .map(this::toUserDTO);
     }
 

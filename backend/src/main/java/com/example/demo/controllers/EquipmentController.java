@@ -7,6 +7,7 @@ import com.example.demo.services.EquipmentService;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +31,14 @@ public class EquipmentController {
         return equipmentService.getEquipmentById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<?> getAllUsersPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<EquipmentResponseDTO> usersPage = equipmentService.getAllEquipmentsPaged(page, size);
+        return ResponseEntity.ok(usersPage);
     }
 
     @PostMapping

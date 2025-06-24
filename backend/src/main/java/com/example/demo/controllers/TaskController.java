@@ -9,6 +9,7 @@ import com.example.demo.services.TaskService;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +34,23 @@ public class TaskController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/filter")
+    @GetMapping("/paged")
+    public ResponseEntity<?> getAllTasksPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Task> tasksPage = taskService.getAllTasksPaged(page, size);
+        return ResponseEntity.ok(tasksPage);
+    }
+
+    @PostMapping("/filter-paged")
+    public ResponseEntity<?> filterTasksPaged(
+            @RequestBody TaskFilterRequestDTO dto,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(taskService.filterTasksPaged(dto, page, size));
+    }
+
+    @PostMapping("/filter")
     public List<Task> filterTasks(@RequestBody TaskFilterRequestDTO dto) {
         return taskService.filterTasks(dto);
     }
