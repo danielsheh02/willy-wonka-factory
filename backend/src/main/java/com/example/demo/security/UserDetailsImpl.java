@@ -33,7 +33,7 @@ public class UserDetailsImpl implements UserDetails {
     public static UserDetailsImpl build(User user) {
 
         List<GrantedAuthority> authorities = Collections
-                .singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+                .singletonList(new SimpleGrantedAuthority(user.getRole().name()));
 
         return new UserDetailsImpl(
                 user.getId(),

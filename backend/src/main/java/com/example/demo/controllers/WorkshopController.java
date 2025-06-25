@@ -46,7 +46,7 @@ public class WorkshopController {
         if (workshopOpt.isPresent()) {
             return ResponseEntity.ok(workshopOpt.get());
         } else {
-            return ResponseEntity.badRequest().body("Invalid foreman IDs");
+            return ResponseEntity.badRequest().body("Invalid foreman or equipment IDs");
         }
     }
 

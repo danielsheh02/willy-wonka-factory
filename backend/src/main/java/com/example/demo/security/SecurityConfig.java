@@ -21,6 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.example.demo.security.jwt.OncePerRequestFilterImpl;
 
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
@@ -91,5 +92,10 @@ public class SecurityConfig {
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider(userDetailsService);
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
         return daoAuthenticationProvider;
+    }
+
+    @Bean
+    static GrantedAuthorityDefaults grantedAuthorityDefaults() {
+        return new GrantedAuthorityDefaults("");
     }
 }

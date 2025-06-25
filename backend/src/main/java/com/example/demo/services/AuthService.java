@@ -36,7 +36,7 @@ public class AuthService {
         String token = jwtUtils.generateJwtToken(userDetails);
 
         List<String> roles = userDetails.getAuthorities().stream()
-                .map(auth -> auth.getAuthority().replaceFirst("^ROLE_", ""))
+                .map(auth -> auth.getAuthority())
                 .toList();
 
         String firstRole = roles.isEmpty() ? null : roles.get(0);

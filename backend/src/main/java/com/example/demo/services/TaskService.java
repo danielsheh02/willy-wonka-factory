@@ -112,9 +112,11 @@ public class TaskService {
                 return Optional.empty();
             user = userOpt.get();
 
-            long activeTasks = taskRepository.countByUserIdAndStatusNot(user.getId(), TaskStatus.COMPLETED);
-            if (activeTasks >= MAX_ALLOWED_TASKS && !dto.isForce()) {
-                throw new WorkerOverloadedException("User has reached the task limit");
+            if (user.getId() != task.getUser().getId()) {
+                long activeTasks = taskRepository.countByUserIdAndStatusNot(user.getId(), TaskStatus.COMPLETED);
+                if (activeTasks >= MAX_ALLOWED_TASKS && !dto.isForce()) {
+                    throw new WorkerOverloadedException("User has reached the task limit");
+                }
             }
         }
 
