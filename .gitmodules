@@ -1,0 +1,3 @@
+[submodule "willy-wonka-admin-frontend"]
+	path = willy-wonka-admin-frontend
+	url = https://github.com/MrDaseMan/willy-wonka-admin-frontend.git
