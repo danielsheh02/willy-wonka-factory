@@ -1,7 +1,12 @@
-.gradle
+# Gradle / Java
+.gradle/
 build/
 backend/bin/
 *.class
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+backend/pg-data/
+
+# Node.js
+willy-wonka-admin-frontend/node_modules/
