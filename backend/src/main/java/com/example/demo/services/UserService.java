@@ -49,7 +49,8 @@ public class UserService {
                 user.getUsername(),
                 user.getRole(),
                 user.getIsBanned(),
-                workshops);
+                workshops,
+                user.getCreatedAt());
     }
 
     public Iterable<UserResponseDTO> getAllUsers() {
@@ -61,6 +62,11 @@ public class UserService {
 
     public Optional<UserResponseDTO> getUserById(Long id) {
         return userRepository.findById(id)
+                .map(this::toUserDTO);
+    }
+
+    public Optional<UserResponseDTO> getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
                 .map(this::toUserDTO);
     }
 

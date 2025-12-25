@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -32,6 +33,14 @@ public class User {
 
     @Column(name = "is_banned")
     private Boolean isBanned = false;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 
     public User() {
     }
@@ -87,5 +96,13 @@ public class User {
 
     public void setWorkshopLinks(Set<WorkshopToUser> workshopLinks) {
         this.workshopLinks = workshopLinks;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

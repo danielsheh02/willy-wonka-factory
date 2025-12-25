@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AppBar, Toolbar, Button, Typography, Box } from "@mui/material";
 import { useAuth } from "../auth/AuthProvider";
+import NotificationBell from "../components/NotificationBell";
 
 const navItems = [
   { path: "/tasks", label: "Задачи" },
@@ -31,6 +32,7 @@ export default function MainLayout() {
               {item.label}
             </Button>
           ))}
+          {user && <NotificationBell />}
           {user && (
             <Button color="inherit" onClick={logout}>
               Выйти

@@ -2,11 +2,13 @@ package com.example.demo.dto.response;
 
 public class JwtResponse {
     private String token;
+    private Long id;
     private String username;
     private String role;
 
-    public JwtResponse(String token, String username, String role) {
+    public JwtResponse(String token, Long id, String username, String role) {
         this.token = token;
+        this.id = id;
         this.username = username;
         this.role = role;
     }
@@ -33,6 +35,14 @@ public class JwtResponse {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
 }

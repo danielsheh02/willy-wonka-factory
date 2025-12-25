@@ -4,11 +4,66 @@ import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActi
 import api, { API_URL } from "../api";
 
 const columns = [
-  { field: "id", headerName: "ID", width: 60 },
-  { field: "name", headerName: "Название", width: 240 },
-  { field: "status", headerName: "Статус", width: 140 },
-  { field: "workshopId", headerName: "ID Цеха", width: 100 },
-  { field: "description", headerName: "Описание", width: 260 },
+  { 
+    field: "id", 
+    headerName: "ID", 
+    width: 70
+  },
+  { 
+    field: "name", 
+    headerName: "Название", 
+    flex: 1,
+    minWidth: 150,
+    renderCell: (params) => (
+      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+        {params.value}
+      </div>
+    )
+  },
+  { 
+    field: "model", 
+    headerName: "Модель", 
+    flex: 0.8,
+    minWidth: 120,
+    renderCell: (params) => (
+      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+        {params.value || '-'}
+      </div>
+    )
+  },
+  { 
+    field: "status", 
+    headerName: "Статус", 
+    width: 120
+  },
+  { 
+    field: "health", 
+    headerName: "Состояние", 
+    width: 110
+  },
+  { 
+    field: "temperature", 
+    headerName: "Температура", 
+    width: 120
+  },
+  { 
+    field: "workshopId", 
+    headerName: "ID Цеха", 
+    width: 100,
+    valueGetter: (params) => params.row.workshop?.id 
+  },
+  { 
+    field: "workshopName", 
+    headerName: "Цех", 
+    flex: 0.8,
+    minWidth: 120,
+    valueGetter: (params) => params.row.workshop?.name,
+    renderCell: (params) => (
+      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+        {params.value || '-'}
+      </div>
+    )
+  },
 ];
 
 export default function EquipmentPage() {
@@ -30,9 +85,15 @@ export default function EquipmentPage() {
     setStatuses(data);
   };
   useEffect(() => { fetchData(); fetchStatuses(); }, []);
-  const handleOpen = (item) => { setSelected(item || { name: "", status: statuses[0] || "", description: "", workshopId: "" }); setOpen(true); };
+  const handleOpen = (item) => { setSelected(item || { name: "", model: "", status: statuses[0] || "", description: "", health: 100, temperature: 0, workshopId: "" }); setOpen(true); };
   const handleClose = () => { setOpen(false); setSelected(null); };
   const handleSave = async () => {
+    // Валидация обязательных полей
+    if (!selected.name || !selected.status || selected.health === undefined || !selected.workshopId) {
+      setNotification("Заполните все обязательные поля!");
+      return;
+    }
+    
     try {
       if (selected.id) {
         await api.put(`${API_URL}/api/equipments/${selected.id}`, selected);
@@ -43,26 +104,104 @@ export default function EquipmentPage() {
       }
       fetchData();
       handleClose();
-    } catch(e){ setNotification("Ошибка при сохранении"); }
+    } catch(e){ 
+      console.error(e);
+      setNotification("Ошибка при сохранении"); 
+    }
   };
   const handleDelete = async (id) => { await api.delete(`${API_URL}/api/equipments/${id}`); fetchData(); setNotification("Оборудование удалено"); };
 
   return (
-    <Box>
-      <Typography variant="h4" mb={2}>Оборудование</Typography>
-      <Button sx={{ mb: 2 }} variant="contained" color="primary" onClick={() => handleOpen()}>Добавить оборудование</Button>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">Оборудование</Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          size="small"
+          onClick={() => handleOpen()}
+          sx={{ textTransform: 'none' }}
+        >
+          + Добавить
+        </Button>
+      </Box>
       {loading ? <CircularProgress /> : (
-        <DataGrid rows={data} columns={columns} autoHeight pageSize={10} onRowDoubleClick={({ row }) => handleOpen(row)} sx={{background:"#fff"}} />
+        <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+          <DataGrid 
+            rows={data} 
+            columns={columns} 
+            pageSize={10}
+            rowsPerPageOptions={[10, 25, 50]}
+            getRowHeight={() => 'auto'}
+            onRowDoubleClick={({ row }) => handleOpen(row)} 
+            sx={{
+              background:"#fff",
+              '& .MuiDataGrid-cell': {
+                py: 1.5,
+              }
+            }} 
+          />
+        </Box>
       )}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>{selected?.id ? "Редактировать оборудование" : "Добавить оборудование"}</DialogTitle>
         <DialogContent>
-          <TextField label="Название" margin="dense" fullWidth value={selected?.name || ""} onChange={e => setSelected(t => ({ ...t, name: e.target.value }))} />
-          <TextField label="Описание" margin="dense" fullWidth value={selected?.description || ""} onChange={e => setSelected(t => ({ ...t, description: e.target.value }))} />
-          <TextField label="ID цеха" margin="dense" fullWidth value={selected?.workshopId || ""} onChange={e => setSelected(t => ({ ...t, workshopId: e.target.value }))} />
-          <FormControl margin="dense" fullWidth>
+          <TextField 
+            label="Название" 
+            margin="dense" 
+            fullWidth 
+            required
+            value={selected?.name || ""} 
+            onChange={e => setSelected(t => ({ ...t, name: e.target.value }))} 
+          />
+          <TextField 
+            label="Модель" 
+            margin="dense" 
+            fullWidth 
+            value={selected?.model || ""} 
+            onChange={e => setSelected(t => ({ ...t, model: e.target.value }))} 
+          />
+          <TextField 
+            label="Описание" 
+            margin="dense" 
+            fullWidth 
+            value={selected?.description || ""} 
+            onChange={e => setSelected(t => ({ ...t, description: e.target.value }))} 
+          />
+          <TextField 
+            label="Состояние (0-100)" 
+            margin="dense" 
+            fullWidth 
+            type="number" 
+            required
+            inputProps={{ min: 0, max: 100 }}
+            value={selected?.health || 0} 
+            onChange={e => setSelected(t => ({ ...t, health: parseInt(e.target.value) }))} 
+          />
+          <TextField 
+            label="Температура" 
+            margin="dense" 
+            fullWidth 
+            type="number" 
+            value={selected?.temperature || 0} 
+            onChange={e => setSelected(t => ({ ...t, temperature: parseFloat(e.target.value) }))} 
+          />
+          <TextField 
+            label="ID цеха" 
+            margin="dense" 
+            fullWidth 
+            type="number" 
+            required
+            value={selected?.workshopId || selected?.workshop?.id || ""} 
+            onChange={e => setSelected(t => ({ ...t, workshopId: e.target.value }))} 
+          />
+          <FormControl margin="dense" fullWidth required>
             <InputLabel>Статус</InputLabel>
-            <Select value={selected?.status || ""} onChange={e => setSelected(t => ({ ...t, status: e.target.value }))} label="Статус">
+            <Select 
+              value={selected?.status || ""} 
+              onChange={e => setSelected(t => ({ ...t, status: e.target.value }))} 
+              label="Статус"
+            >
               {statuses.map(st => <MenuItem value={st} key={st}>{st}</MenuItem>)}
             </Select>
           </FormControl>
@@ -74,7 +213,11 @@ export default function EquipmentPage() {
         </DialogActions>
       </Dialog>
       <Snackbar open={!!notification} autoHideDuration={3000} onClose={() => setNotification("")}>
-          {notification && <Alert severity="info">{notification}</Alert>}
+      {notification ? (
+        <Alert severity="info">
+          {notification}
+        </Alert>
+      ) : null}
       </Snackbar>
     </Box>
   );

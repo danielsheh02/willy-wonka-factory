@@ -4,13 +4,61 @@ import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActi
 import api, { API_URL } from "../api";
 
 const columns = [
-  { field: "id", headerName: "ID", width: 60 },
-  { field: "title", headerName: "Название", width: 220 },
-  { field: "description", headerName: "Описание", width: 280 },
-  { field: "priority", headerName: "Приоритет", width: 120 },
-  { field: "status", headerName: "Статус", width: 140 },
-  { field: "workerId", headerName: "ID Рабочего", width: 100 },
-  { field: "deadline", headerName: "Дедлайн", width: 110 },
+  { 
+    field: "id", 
+    headerName: "ID", 
+    width: 70
+  },
+  { 
+    field: "name", 
+    headerName: "Название", 
+    flex: 1,
+    minWidth: 150,
+    renderCell: (params) => (
+      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+        {params.value}
+      </div>
+    )
+  },
+  { 
+    field: "description", 
+    headerName: "Описание", 
+    flex: 1.5,
+    minWidth: 200,
+    renderCell: (params) => (
+      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+        {params.value || '-'}
+      </div>
+    )
+  },
+  { 
+    field: "status", 
+    headerName: "Статус", 
+    width: 140
+  },
+  { 
+    field: "userId", 
+    headerName: "ID Рабочего", 
+    width: 110,
+    valueGetter: (params) => params.row.user?.id 
+  },
+  { 
+    field: "username", 
+    headerName: "Рабочий", 
+    flex: 0.8,
+    minWidth: 120,
+    valueGetter: (params) => params.row.user?.username 
+  },
+  { 
+    field: "createdAt", 
+    headerName: "Создано", 
+    width: 300,
+    valueFormatter: (params) => {
+      if (!params.value) return '-';
+      const date = new Date(params.value);
+      return date.toLocaleDateString('ru-RU');
+    }
+  },
 ];
 
 export default function TasksPage() {
@@ -38,12 +86,18 @@ export default function TasksPage() {
   }, []);
 
   const handleOpen = (task) => {
-    setSelectedTask(task || { title: "", description: "", priority: "", status: statuses[0] || "", deadline: "", workerId: "" });
+    setSelectedTask(task || { name: "", description: "", status: statuses[0] || "", userId: "" });
     setOpen(true);
   };
   const handleClose = () => { setOpen(false); setSelectedTask(null); };
 
   const handleSave = async () => {
+    // Валидация обязательных полей
+    if (!selectedTask.name || !selectedTask.status || !selectedTask.userId) {
+      setNotification("Заполните все обязательные поля!");
+      return;
+    }
+    
     try {
       if (selectedTask.id) {
         await api.put(`${API_URL}/api/tasks/${selectedTask.id}`, selectedTask);
@@ -54,7 +108,10 @@ export default function TasksPage() {
       }
       fetchTasks();
       handleClose();
-    } catch (e) { setNotification("Ошибка при сохранении"); }
+    } catch (e) { 
+      console.error(e);
+      setNotification("Ошибка при сохранении"); 
+    }
   };
   const handleDelete = async (id) => {
     await api.delete(`${API_URL}/api/tasks/${id}`);
@@ -63,26 +120,73 @@ export default function TasksPage() {
   };
 
   return (
-    <Box>
-      <Typography variant="h4" mb={2}>Задачи</Typography>
-      <Button sx={{ mb: 2 }} variant="contained" color="primary" onClick={() => handleOpen()}>Создать задачу</Button>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">Задачи</Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          size="small"
+          onClick={() => handleOpen()}
+          sx={{ textTransform: 'none' }}
+        >
+          + Создать
+        </Button>
+      </Box>
       {loading ? <CircularProgress /> : (
-        <DataGrid rows={tasks} columns={columns} autoHeight pageSize={10}
-          onRowDoubleClick={({ row }) => handleOpen(row)}
-          sx={{ background: "#fff" }}
-        />
+        <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+          <DataGrid 
+            rows={tasks} 
+            columns={columns} 
+            pageSize={10}
+            rowsPerPageOptions={[10, 25, 50]}
+            getRowHeight={() => 'auto'}
+            onRowDoubleClick={({ row }) => handleOpen(row)}
+            sx={{ 
+              background: "#fff",
+              '& .MuiDataGrid-cell': {
+                py: 1.5,
+              }
+            }}
+          />
+        </Box>
       )}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>{selectedTask?.id ? "Редактировать задачу" : "Создать задачу"}</DialogTitle>
         <DialogContent>
-          <TextField label="Название" margin="dense" fullWidth value={selectedTask?.title || ""} onChange={e => setSelectedTask(t => ({ ...t, title: e.target.value }))} />
-          <TextField label="Описание" margin="dense" fullWidth multiline value={selectedTask?.description || ""} onChange={e => setSelectedTask(t => ({ ...t, description: e.target.value }))} />
-          <TextField label="Приоритет" margin="dense" fullWidth value={selectedTask?.priority || ""} onChange={e => setSelectedTask(t => ({ ...t, priority: e.target.value }))} />
-          <TextField label="Дедлайн" margin="dense" fullWidth type="date" value={selectedTask?.deadline || ""} onChange={e => setSelectedTask(t => ({ ...t, deadline: e.target.value }))} InputLabelProps={{shrink:true}} />
-          <TextField label="Рабочий (ID)" margin="dense" fullWidth type="number" value={selectedTask?.workerId || ""} onChange={e => setSelectedTask(t => ({ ...t, workerId: e.target.value }))} />
-          <FormControl margin="dense" fullWidth>
+          <TextField 
+            label="Название" 
+            margin="dense" 
+            fullWidth 
+            required
+            value={selectedTask?.name || ""} 
+            onChange={e => setSelectedTask(t => ({ ...t, name: e.target.value }))} 
+          />
+          <TextField 
+            label="Описание" 
+            margin="dense" 
+            fullWidth 
+            multiline 
+            rows={3}
+            value={selectedTask?.description || ""} 
+            onChange={e => setSelectedTask(t => ({ ...t, description: e.target.value }))} 
+          />
+          <TextField 
+            label="Рабочий (ID)" 
+            margin="dense" 
+            fullWidth 
+            type="number" 
+            required
+            value={selectedTask?.userId || selectedTask?.user?.id || ""} 
+            onChange={e => setSelectedTask(t => ({ ...t, userId: e.target.value }))} 
+          />
+          <FormControl margin="dense" fullWidth required>
             <InputLabel>Статус</InputLabel>
-            <Select value={selectedTask?.status || ""} onChange={e => setSelectedTask(t => ({ ...t, status: e.target.value }))} label="Статус">
+            <Select 
+              value={selectedTask?.status || ""} 
+              onChange={e => setSelectedTask(t => ({ ...t, status: e.target.value }))} 
+              label="Статус"
+            >
               {statuses.map(st => <MenuItem value={st} key={st}>{st}</MenuItem>)}
             </Select>
           </FormControl>
@@ -94,7 +198,11 @@ export default function TasksPage() {
         </DialogActions>
       </Dialog>
       <Snackbar open={!!notification} autoHideDuration={3000} onClose={() => setNotification("")}>
-          {notification && <Alert severity="info">{notification}</Alert>}
+      {notification ? (
+        <Alert severity="info">
+          {notification}
+        </Alert>
+      ) : null}
       </Snackbar>
     </Box>
   );

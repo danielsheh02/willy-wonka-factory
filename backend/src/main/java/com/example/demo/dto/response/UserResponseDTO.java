@@ -1,5 +1,6 @@
 package com.example.demo.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 import com.example.demo.dto.short_db.WorkshopShortDTO;
@@ -11,13 +12,15 @@ public class UserResponseDTO {
     private Role role;
     private Boolean isBanned;
     private Set<WorkshopShortDTO> workshops;
+    private LocalDateTime createdAt;
 
-    public UserResponseDTO(Long id, String username, Role role, Boolean isBanned, Set<WorkshopShortDTO> workshops) {
+    public UserResponseDTO(Long id, String username, Role role, Boolean isBanned, Set<WorkshopShortDTO> workshops, LocalDateTime createdAt) {
         this.id = id;
         this.username = username;
         this.role = role;
         this.isBanned = isBanned;
         this.workshops = workshops;
+        this.createdAt = createdAt;
     }
 
     public Long getId() {
@@ -58,6 +61,14 @@ public class UserResponseDTO {
 
     public void setWorkshops(Set<WorkshopShortDTO> foremans) {
         this.workshops = foremans;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
 }

@@ -22,11 +22,13 @@ import java.util.Optional;
 public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     public static final int MAX_ALLOWED_TASKS = 5;
 
-    public TaskService(TaskRepository taskRepository, UserRepository userRepository) {
+    public TaskService(TaskRepository taskRepository, UserRepository userRepository, NotificationService notificationService) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public Iterable<Task> getAllTasks() {
@@ -92,7 +94,14 @@ public class TaskService {
             task.setCompletedAt(LocalDateTime.now());
         }
 
-        return Optional.of(taskRepository.save(task));
+        Task savedTask = taskRepository.save(task);
+
+        // Создаем уведомление для пользователя о новой задаче
+        if (user != null) {
+            notificationService.createTaskAssignedNotification(user, savedTask.getId(), savedTask.getName());
+        }
+
+        return Optional.of(savedTask);
     }
 
     public Optional<Task> updateTask(Long id, TaskRequestDTO dto) {
@@ -124,10 +133,24 @@ public class TaskService {
             task.setCompletedAt(LocalDateTime.now());
         }
 
+        // Проверяем, изменился ли пользователь
+        boolean userChanged = (task.getUser() == null && user != null) || 
+                              (task.getUser() != null && user != null && !task.getUser().getId().equals(user.getId()));
+
         task.setStatus(dto.getStatus());
         task.setUser(user);
 
-        return Optional.of(taskRepository.save(task));
+        Task savedTask = taskRepository.save(task);
+
+        // Создаем уведомление если задача переназначена на другого пользователя
+        if (userChanged && user != null) {
+            notificationService.createTaskAssignedNotification(user, savedTask.getId(), savedTask.getName());
+        } else if (user != null && !userChanged) {
+            // Если пользователь тот же, отправляем уведомление об обновлении
+            notificationService.createTaskUpdatedNotification(user, savedTask.getId(), savedTask.getName());
+        }
+
+        return Optional.of(savedTask);
     }
 
     public void deleteTask(Long id) {

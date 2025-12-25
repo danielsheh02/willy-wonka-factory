@@ -18,4 +18,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Notifications API
+export const notificationsAPI = {
+  // Получить все уведомления текущего пользователя
+  getMyNotifications: () => api.get("/api/notifications/my"),
+  
+  // Получить уведомления с пагинацией
+  getMyNotificationsPaged: (page = 0, size = 10) => 
+    api.get("/api/notifications/my/paged", { params: { page, size } }),
+  
+  // Получить непрочитанные уведомления
+  getUnreadNotifications: () => api.get("/api/notifications/my/unread"),
+  
+  // Получить количество непрочитанных уведомлений
+  getUnreadCount: () => api.get("/api/notifications/my/unread/count"),
+  
+  // Отметить уведомление как прочитанное
+  markAsRead: (id) => api.put(`/api/notifications/${id}/read`),
+  
+  // Отметить все уведомления как прочитанные
+  markAllAsRead: () => api.put("/api/notifications/my/read-all"),
+  
+  // Удалить уведомление
+  deleteNotification: (id) => api.delete(`/api/notifications/${id}`),
+  
+  // Создать уведомление (для администраторов)
+  createNotification: (data) => api.post("/api/notifications", data)
+};
+
 export default api;

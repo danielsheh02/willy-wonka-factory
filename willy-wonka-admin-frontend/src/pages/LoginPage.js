@@ -19,8 +19,8 @@ export default function LoginPage() {
         username: login,
         password: password
       });
-      const { token, username, role } = response.data;
-      const user = { username, role };
+      const { token, id, username, role } = response.data;
+      const user = { id, username, role };
       loginUser(user, token);
       console.log(response.data);
       console.log(user);

@@ -4,9 +4,40 @@ import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActi
 import api, { API_URL } from "../api";
 
 const columns = [
-  { field: "id", headerName: "ID", width: 80 },
-  { field: "username", headerName: "Логин", width: 200 },
-  { field: "role", headerName: "Роль", width: 160 },
+  { 
+    field: "id", 
+    headerName: "ID", 
+    width: 80
+  },
+  { 
+    field: "username", 
+    headerName: "Логин", 
+    flex: 1,
+    minWidth: 150
+  },
+  { 
+    field: "role", 
+    headerName: "Роль", 
+    width: 160
+  },
+  { 
+    field: "isBanned", 
+    headerName: "Заблокирован", 
+    width: 130,
+    valueGetter: (params) => params.row.isBanned ? "Да" : "Нет" 
+  },
+  { 
+    field: "workshops", 
+    headerName: "Цеха", 
+    flex: 1.5,
+    minWidth: 200,
+    valueGetter: (params) => params.row.workshops?.map(w => w.name).join(", ") || "-",
+    renderCell: (params) => (
+      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+        {params.value}
+      </div>
+    )
+  },
 ];
 
 const ROLES = [
@@ -28,6 +59,18 @@ export default function UsersPage() {
   const handleOpen = (user) => { setSelected(user || { username: "", role: "WORKER", password: "" }); setOpen(true); };
   const handleClose = () => { setOpen(false); setSelected(null); };
   const handleSave = async () => {
+    // Валидация обязательных полей
+    if (!selected.username || !selected.role) {
+      setNotification("Заполните все обязательные поля!");
+      return;
+    }
+    
+    // При создании пароль обязателен
+    if (!selected.id && !selected.password) {
+      setNotification("Укажите пароль для нового пользователя!");
+      return;
+    }
+    
     try {
       if (selected.id) {
         await api.put(`${API_URL}/api/users/${selected.id}`, selected);
@@ -38,27 +81,73 @@ export default function UsersPage() {
       }
       fetchUsers();
       handleClose();
-    } catch(err){ setNotification("Ошибка при сохранении"); }
+    } catch(err){ 
+      console.error(err);
+      setNotification("Ошибка при сохранении"); 
+    }
   };
   const handleDelete = async (id) => { await api.delete(`${API_URL}/api/users/${id}`); fetchUsers(); setNotification("Пользователь удалён"); };
 
   return (
-    <Box>
-      <Typography variant="h4" mb={2}>Сотрудники</Typography>
-      <Button sx={{ mb: 2 }} variant="contained" onClick={() => handleOpen()}>Создать</Button>
-      <DataGrid rows={users} columns={columns} autoHeight pageSize={10} onRowDoubleClick={({ row }) => handleOpen(row)} style={{ background: "#fff" }} />
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">Сотрудники</Typography>
+        <Button 
+          variant="contained" 
+          size="small"
+          onClick={() => handleOpen()}
+          sx={{ textTransform: 'none' }}
+        >
+          + Создать
+        </Button>
+      </Box>
+      <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+        <DataGrid 
+          rows={users} 
+          columns={columns} 
+          pageSize={10}
+          rowsPerPageOptions={[10, 25, 50]}
+          getRowHeight={() => 'auto'}
+          onRowDoubleClick={({ row }) => handleOpen(row)} 
+          sx={{ 
+            background: "#fff",
+            '& .MuiDataGrid-cell': {
+              py: 1.5,
+            }
+          }} 
+        />
+      </Box>
       <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
         <DialogTitle>{selected?.id ? "Редактировать" : "Создать"}</DialogTitle>
         <DialogContent>
-          <TextField label="Логин" margin="dense" fullWidth value={selected?.username || ""} onChange={e => setSelected(u => ({ ...u, username: e.target.value }))} />
-          <FormControl margin="dense" fullWidth>
+          <TextField 
+            label="Логин" 
+            margin="dense" 
+            fullWidth 
+            required
+            value={selected?.username || ""} 
+            onChange={e => setSelected(u => ({ ...u, username: e.target.value }))} 
+          />
+          <FormControl margin="dense" fullWidth required>
             <InputLabel>Роль</InputLabel>
-            <Select value={selected?.role || "WORKER"} onChange={e => setSelected(u => ({ ...u, role: e.target.value }))} label="Роль">
+            <Select 
+              value={selected?.role || "WORKER"} 
+              onChange={e => setSelected(u => ({ ...u, role: e.target.value }))} 
+              label="Роль"
+            >
               {ROLES.map(r => <MenuItem value={r.value} key={r.value}>{r.label}</MenuItem>)}
             </Select>
           </FormControl>
           {!selected?.id && (
-            <TextField label="Пароль" margin="dense" fullWidth type="password" value={selected?.password || ""} onChange={e => setSelected(u => ({ ...u, password: e.target.value }))} />
+            <TextField 
+              label="Пароль" 
+              margin="dense" 
+              fullWidth 
+              type="password" 
+              required
+              value={selected?.password || ""} 
+              onChange={e => setSelected(u => ({ ...u, password: e.target.value }))} 
+            />
           )}
         </DialogContent>
         <DialogActions>
@@ -68,7 +157,11 @@ export default function UsersPage() {
         </DialogActions>
       </Dialog>
       <Snackbar open={!!notification} autoHideDuration={3000} onClose={() => setNotification("")}>
-          {notification && <Alert severity="info">{notification}</Alert>}
+      {notification ? (
+        <Alert severity="info">
+          {notification}
+        </Alert>
+      ) : null}
       </Snackbar>
     </Box>
   );
