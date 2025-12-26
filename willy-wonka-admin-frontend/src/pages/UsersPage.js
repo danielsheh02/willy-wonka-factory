@@ -105,8 +105,15 @@ export default function UsersPage() {
         <DataGrid 
           rows={users} 
           columns={columns} 
-          pageSize={10}
-          rowsPerPageOptions={[10, 25, 50]}
+          pageSizeOptions={[10, 25, 50, 100]}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                page: 0,
+                pageSize: 10,
+              },
+            },
+          }}
           getRowHeight={() => 'auto'}
           onRowDoubleClick={({ row }) => handleOpen(row)} 
           sx={{ 

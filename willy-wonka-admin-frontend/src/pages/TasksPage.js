@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert } from "@mui/material";
+import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
+import PeopleIcon from "@mui/icons-material/People";
 import api, { API_URL } from "../api";
+import { useAuth } from "../auth/AuthProvider";
 
 const columns = [
   { 
@@ -62,12 +65,15 @@ const columns = [
 ];
 
 export default function TasksPage() {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [statuses, setStatuses] = useState([]);
+  const [users, setUsers] = useState([]);
   const [notification, setNotification] = useState("");
+  const [filterMode, setFilterMode] = useState("all"); // "all" или "my"
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -79,11 +85,29 @@ export default function TasksPage() {
     const { data } = await api.get(`${API_URL}/api/tasks/statuses`);
     setStatuses(data);
   };
+  
+  const fetchUsers = async () => {
+    try {
+      const { data } = await api.get(`${API_URL}/api/users`);
+      setUsers(data);
+    } catch (error) {
+      console.error("Ошибка загрузки пользователей:", error);
+    }
+  };
 
   useEffect(() => {
     fetchTasks();
     fetchStatuses();
+    fetchUsers();
   }, []);
+
+  // Фильтрация задач
+  const filteredTasks = useMemo(() => {
+    if (filterMode === "my" && user?.id) {
+      return tasks.filter(task => task.user?.id === user.id);
+    }
+    return tasks;
+  }, [tasks, filterMode, user]);
 
   const handleOpen = (task) => {
     setSelectedTask(task || { name: "", description: "", status: statuses[0] || "", userId: "" });
@@ -93,17 +117,26 @@ export default function TasksPage() {
 
   const handleSave = async () => {
     // Валидация обязательных полей
-    if (!selectedTask.name || !selectedTask.status || !selectedTask.userId) {
+    const userId = selectedTask.userId || selectedTask.user?.id;
+    if (!selectedTask.name || !selectedTask.status || !userId) {
       setNotification("Заполните все обязательные поля!");
       return;
     }
     
+    // Подготовка данных для отправки
+    const dataToSend = {
+      name: selectedTask.name,
+      description: selectedTask.description,
+      status: selectedTask.status,
+      userId: userId
+    };
+    
     try {
       if (selectedTask.id) {
-        await api.put(`${API_URL}/api/tasks/${selectedTask.id}`, selectedTask);
+        await api.put(`${API_URL}/api/tasks/${selectedTask.id}`, dataToSend);
         setNotification("Задача обновлена!");
       } else {
-        await api.post(`${API_URL}/api/tasks`, selectedTask);
+        await api.post(`${API_URL}/api/tasks`, dataToSend);
         setNotification("Задача создана!");
       }
       fetchTasks();
@@ -123,20 +156,46 @@ export default function TasksPage() {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Задачи</Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="small"
-          onClick={() => handleOpen()}
-          sx={{ textTransform: 'none' }}
-        >
-          + Создать
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <ToggleButtonGroup
+            value={filterMode}
+            exclusive
+            onChange={(e, newValue) => newValue && setFilterMode(newValue)}
+            size="small"
+          >
+            <ToggleButton value="all" aria-label="все задачи">
+              <PeopleIcon sx={{ mr: 0.5, fontSize: 18 }} />
+              Все
+            </ToggleButton>
+            <ToggleButton value="my" aria-label="мои задачи">
+              <PersonIcon sx={{ mr: 0.5, fontSize: 18 }} />
+              Мои
+            </ToggleButton>
+          </ToggleButtonGroup>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            size="small"
+            onClick={() => handleOpen()}
+            sx={{ textTransform: 'none' }}
+          >
+            + Создать
+          </Button>
+        </Box>
       </Box>
       {loading ? <CircularProgress /> : (
         <Box sx={{ flexGrow: 1, minHeight: 0 }}>
           <DataGrid 
-            rows={tasks} 
+            pageSizeOptions={[10, 25, 50, 100]}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  page: 0,
+                  pageSize: 10,
+                },
+              },
+            }}
+            rows={filteredTasks} 
             columns={columns} 
             pageSize={10}
             rowsPerPageOptions={[10, 25, 50]}
@@ -171,15 +230,27 @@ export default function TasksPage() {
             value={selectedTask?.description || ""} 
             onChange={e => setSelectedTask(t => ({ ...t, description: e.target.value }))} 
           />
-          <TextField 
-            label="Рабочий (ID)" 
-            margin="dense" 
-            fullWidth 
-            type="number" 
-            required
-            value={selectedTask?.userId || selectedTask?.user?.id || ""} 
-            onChange={e => setSelectedTask(t => ({ ...t, userId: e.target.value }))} 
-          />
+          <FormControl margin="dense" fullWidth required>
+            <InputLabel>Рабочий</InputLabel>
+            <Select 
+              value={selectedTask?.userId || selectedTask?.user?.id || ""} 
+              onChange={e => setSelectedTask(t => ({ ...t, userId: e.target.value }))} 
+              label="Рабочий"
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 300,
+                  },
+                },
+              }}
+            >
+              {users.map(u => (
+                <MenuItem value={u.id} key={u.id}>
+                  {u.username} (ID: {u.id}) - {u.role === 'WORKER' ? 'Рабочий' : 'Начальник'}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <FormControl margin="dense" fullWidth required>
             <InputLabel>Статус</InputLabel>
             <Select 

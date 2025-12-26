@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert } from "@mui/material";
+import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, FormControl, InputLabel, Select, MenuItem, Chip } from "@mui/material";
 import api, { API_URL } from "../api";
 
 const columns = [
@@ -55,19 +55,32 @@ export default function WorkshopsPage() {
   const [list, setList] = useState([]);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [users, setUsers] = useState([]);
   const [notification, setNotification] = useState("");
   const fetchList = async () => {
     const { data } = await api.get(`${API_URL}/api/workshops`);
     setList(data);
   };
-  useEffect(() => { fetchList(); }, []);
+  
+  const fetchUsers = async () => {
+    try {
+      const { data } = await api.get(`${API_URL}/api/users`);
+      // Фильтруем только начальников
+      const foremans = data.filter(u => u.role === 'FOREMAN');
+      setUsers(foremans);
+    } catch (error) {
+      console.error("Ошибка загрузки пользователей:", error);
+    }
+  };
+  
+  useEffect(() => { fetchList(); fetchUsers(); }, []);
   const handleOpen = (item) => { 
     if (item) {
-      // При редактировании конвертируем массив foremans в строку ID через запятую
-      const foremanIds = item.foremans?.map(f => f.id).join(",") || "";
+      // При редактировании конвертируем массив foremans в массив ID
+      const foremanIds = item.foremans?.map(f => f.id) || [];
       setSelected({ ...item, foremanIds });
     } else {
-      setSelected({ name: "", description: "", foremanIds: "" });
+      setSelected({ name: "", description: "", foremanIds: [] });
     }
     setOpen(true); 
   };
@@ -80,15 +93,10 @@ export default function WorkshopsPage() {
     }
     
     try {
-      // Преобразуем строку foremanIds в массив чисел
-      const foremanIdsArray = selected.foremanIds 
-        ? selected.foremanIds.split(",").map(id => parseInt(id.trim())).filter(id => !isNaN(id))
-        : [];
-      
       const payload = {
         name: selected.name,
         description: selected.description,
-        foremanIds: foremanIdsArray
+        foremanIds: selected.foremanIds || []
       };
       
       if (selected.id) {
@@ -125,8 +133,15 @@ export default function WorkshopsPage() {
         <DataGrid 
           rows={list} 
           columns={columns} 
-          pageSize={10}
-          rowsPerPageOptions={[10, 25, 50]}
+          pageSizeOptions={[10, 25, 50, 100]}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                page: 0,
+                pageSize: 10,
+              },
+            },
+          }}
           getRowHeight={() => 'auto'}
           onRowDoubleClick={({ row }) => handleOpen(row)} 
           sx={{
@@ -157,14 +172,36 @@ export default function WorkshopsPage() {
             value={selected?.description || ""} 
             onChange={e => setSelected(t => ({ ...t, description: e.target.value }))} 
           />
-          <TextField 
-            label="ID начальников (через запятую)" 
-            margin="dense" 
-            fullWidth 
-            value={selected?.foremanIds || ""} 
-            onChange={e => setSelected(t => ({ ...t, foremanIds: e.target.value }))}
-            helperText="Например: 1,2,3"
-          />
+          <FormControl margin="dense" fullWidth>
+            <InputLabel>Начальники цеха</InputLabel>
+            <Select 
+              multiple
+              value={selected?.foremanIds || []} 
+              onChange={e => setSelected(t => ({ ...t, foremanIds: e.target.value }))}
+              label="Начальники цеха"
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 300,
+                  },
+                },
+              }}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((id) => {
+                    const user = users.find(u => u.id === id);
+                    return <Chip key={id} label={user?.username || `ID: ${id}`} size="small" />;
+                  })}
+                </Box>
+              )}
+            >
+              {users.map(u => (
+                <MenuItem value={u.id} key={u.id}>
+                  {u.username} (ID: {u.id})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           {selected?.id && <Button color="error" onClick={() => { handleDelete(selected.id); handleClose(); }}>Удалить</Button>}

@@ -185,23 +185,23 @@ const NotificationBell = () => {
               <Box sx={{ width: "100%", display: "flex", gap: 1, alignItems: "flex-start" }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: notification.isRead ? 400 : 600 }}>
-                      {notification.title}
-                    </Typography>
-                    <Chip 
-                      label={notification.type.replace("_", " ")} 
-                      size="small" 
-                      color={getNotificationColor(notification.type)}
-                      sx={{ height: 20, fontSize: "0.7rem" }}
-                    />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    {notification.message}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
-                    {formatDate(notification.createdAt)}
-                  </Typography>
-                </Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: notification.isRead ? 400 : 600 }}>
+                        {notification.title}
+                      </Typography>
+                      <Chip 
+                        label={notification.type.replace("_", " ")} 
+                        size="small" 
+                        color={getNotificationColor(notification.type)}
+                        sx={{ height: 20, fontSize: "0.7rem" }}
+                      />
+                    </Stack>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        {notification.message}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
+                        {formatDate(notification.createdAt)}
+                      </Typography>
+                    </Box>
                 <IconButton
                   size="small"
                   onClick={(e) => handleDelete(notification.id, e)}

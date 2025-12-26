@@ -72,6 +72,7 @@ export default function EquipmentPage() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [statuses, setStatuses] = useState([]);
+  const [workshops, setWorkshops] = useState([]);
   const [notification, setNotification] = useState("");
 
   const fetchData = async () => {
@@ -84,22 +85,39 @@ export default function EquipmentPage() {
     const { data } = await api.get(`${API_URL}/api/equipments/statuses`);
     setStatuses(data);
   };
-  useEffect(() => { fetchData(); fetchStatuses(); }, []);
+  
+  const fetchWorkshops = async () => {
+    try {
+      const { data } = await api.get(`${API_URL}/api/workshops`);
+      setWorkshops(data);
+    } catch (error) {
+      console.error("Ошибка загрузки цехов:", error);
+    }
+  };
+  
+  useEffect(() => { fetchData(); fetchStatuses(); fetchWorkshops(); }, []);
   const handleOpen = (item) => { setSelected(item || { name: "", model: "", status: statuses[0] || "", description: "", health: 100, temperature: 0, workshopId: "" }); setOpen(true); };
   const handleClose = () => { setOpen(false); setSelected(null); };
   const handleSave = async () => {
     // Валидация обязательных полей
-    if (!selected.name || !selected.status || selected.health === undefined || !selected.workshopId) {
+    const workshopId = selected.workshopId || selected.workshop?.id;
+    if (!selected.name || !selected.status || selected.health === undefined || !workshopId) {
       setNotification("Заполните все обязательные поля!");
       return;
     }
     
+    // Подготовка данных для отправки
+    const dataToSend = {
+      ...selected,
+      workshopId: workshopId
+    };
+    
     try {
       if (selected.id) {
-        await api.put(`${API_URL}/api/equipments/${selected.id}`, selected);
+        await api.put(`${API_URL}/api/equipments/${selected.id}`, dataToSend);
         setNotification("Оборудование обновлено!");
       } else {
-        await api.post(`${API_URL}/api/equipments`, selected);
+        await api.post(`${API_URL}/api/equipments`, dataToSend);
         setNotification("Оборудование добавлено!");
       }
       fetchData();
@@ -130,8 +148,15 @@ export default function EquipmentPage() {
           <DataGrid 
             rows={data} 
             columns={columns} 
-            pageSize={10}
-            rowsPerPageOptions={[10, 25, 50]}
+            pageSizeOptions={[10, 25, 50, 100]}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  page: 0,
+                  pageSize: 10,
+                },
+              },
+            }}
             getRowHeight={() => 'auto'}
             onRowDoubleClick={({ row }) => handleOpen(row)} 
             sx={{
@@ -186,15 +211,27 @@ export default function EquipmentPage() {
             value={selected?.temperature || 0} 
             onChange={e => setSelected(t => ({ ...t, temperature: parseFloat(e.target.value) }))} 
           />
-          <TextField 
-            label="ID цеха" 
-            margin="dense" 
-            fullWidth 
-            type="number" 
-            required
-            value={selected?.workshopId || selected?.workshop?.id || ""} 
-            onChange={e => setSelected(t => ({ ...t, workshopId: e.target.value }))} 
-          />
+          <FormControl margin="dense" fullWidth required>
+            <InputLabel>Цех</InputLabel>
+            <Select 
+              value={selected?.workshopId || selected?.workshop?.id || ""} 
+              onChange={e => setSelected(t => ({ ...t, workshopId: e.target.value }))} 
+              label="Цех"
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 300,
+                  },
+                },
+              }}
+            >
+              {workshops.map(w => (
+                <MenuItem value={w.id} key={w.id}>
+                  {w.name} (ID: {w.id})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <FormControl margin="dense" fullWidth required>
             <InputLabel>Статус</InputLabel>
             <Select 
