@@ -41,8 +41,6 @@ public class NotificationService {
     }
 
     public List<NotificationResponseDTO> getUserNotifications(Long userId) {
-        System.out.println(notificationRepository.findAll());
-        System.out.println("getUserNotifications: " + userId);
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::toDTO)

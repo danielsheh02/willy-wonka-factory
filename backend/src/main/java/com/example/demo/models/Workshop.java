@@ -19,6 +19,12 @@ public class Workshop {
     @Column
     private String description;
 
+    @Column(name = "capacity")
+    private Integer capacity; // Вместимость цеха (количество человек)
+
+    @Column(name = "visit_duration_minutes")
+    private Integer visitDurationMinutes; // Стандартная длительность посещения в минутах
+
     @OneToMany(mappedBy = "workshop", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private Set<WorkshopToUser> foremanLinks;
@@ -73,5 +79,21 @@ public class Workshop {
 
     public void setForemanLinks(Set<WorkshopToUser> foremanLinks) {
         this.foremanLinks = foremanLinks;
+    }
+
+    public Integer getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(Integer capacity) {
+        this.capacity = capacity;
+    }
+
+    public Integer getVisitDurationMinutes() {
+        return visitDurationMinutes;
+    }
+
+    public void setVisitDurationMinutes(Integer visitDurationMinutes) {
+        this.visitDurationMinutes = visitDurationMinutes;
     }
 }

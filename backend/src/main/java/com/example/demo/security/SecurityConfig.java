@@ -60,13 +60,13 @@ public class SecurityConfig {
                                 "/api/auth/signin",
                                 "/api/auth/signup")
                         .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasRole("FOREMAN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("FOREMAN")
-                        .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("FOREMAN", "WORKER", "UNKNOWN")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("FOREMAN", "WORKER")
-                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("FOREMAN", "WORKER")
+                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER", "GUIDE")
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER", "GUIDE")
+                        .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("FOREMAN", "WORKER", "UNKNOWN", "ADMIN", "MASTER", "GUIDE")
+                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
+                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").hasAnyRole("FOREMAN",
-                                "WORKER", "UNKNOWN")
+                                "WORKER", "UNKNOWN", "ADMIN", "MASTER", "GUIDE")
                         .anyRequest().authenticated())
                 .addFilterBefore(oncePerRequestFilterImpl, UsernamePasswordAuthenticationFilter.class);
 

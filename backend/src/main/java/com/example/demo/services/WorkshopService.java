@@ -68,6 +68,8 @@ public class WorkshopService {
                 workshop.getId(),
                 workshop.getName(),
                 workshop.getDescription(),
+                workshop.getCapacity(),
+                workshop.getVisitDurationMinutes(),
                 foremans, equipmentDTOs);
     }
 
@@ -93,6 +95,8 @@ public class WorkshopService {
         Workshop workshop = new Workshop();
         workshop.setName(dto.getName());
         workshop.setDescription(dto.getDescription());
+        workshop.setCapacity(dto.getCapacity());
+        workshop.setVisitDurationMinutes(dto.getVisitDurationMinutes());
         Set<WorkshopToUser> foremanLinks = new HashSet<>();
         if (dto.getForemanIds() != null) {
             for (Long userId : dto.getForemanIds()) {
@@ -139,6 +143,8 @@ public class WorkshopService {
 
         workshop.setName(dto.getName());
         workshop.setDescription(dto.getDescription());
+        workshop.setCapacity(dto.getCapacity());
+        workshop.setVisitDurationMinutes(dto.getVisitDurationMinutes());
         Set<WorkshopToUser> foremanLinks = new HashSet<>();
         if (dto.getForemanIds() != null) {
             for (Long userId : dto.getForemanIds()) {

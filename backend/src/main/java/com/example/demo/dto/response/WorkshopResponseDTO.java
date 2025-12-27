@@ -9,14 +9,19 @@ public class WorkshopResponseDTO {
     private Long id;
     private String name;
     private String description;
+    private Integer capacity;
+    private Integer visitDurationMinutes;
     private Set<UserShortDTO> foremans;
     private Set<EquipmentShortDTO> equipments;
 
-    public WorkshopResponseDTO(Long id, String name, String description, Set<UserShortDTO> foremans,
+    public WorkshopResponseDTO(Long id, String name, String description, Integer capacity, 
+            Integer visitDurationMinutes, Set<UserShortDTO> foremans,
             Set<EquipmentShortDTO> equipments) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.capacity = capacity;
+        this.visitDurationMinutes = visitDurationMinutes;
         this.foremans = foremans;
         this.equipments = equipments;
     }
@@ -59,6 +64,22 @@ public class WorkshopResponseDTO {
 
     public void setEquipments(Set<EquipmentShortDTO> equipments) {
         this.equipments = equipments;
+    }
+
+    public Integer getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(Integer capacity) {
+        this.capacity = capacity;
+    }
+
+    public Integer getVisitDurationMinutes() {
+        return visitDurationMinutes;
+    }
+
+    public void setVisitDurationMinutes(Integer visitDurationMinutes) {
+        this.visitDurationMinutes = visitDurationMinutes;
     }
 
 }

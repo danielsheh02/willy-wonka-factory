@@ -45,8 +45,18 @@ export default function ProfilePage() {
     </Box>
   );
 
-  const roleLabel = userData?.role === 'WORKER' ? 'Рабочий' : 
-                    userData?.role === 'FOREMAN' ? 'Начальник цеха' : 'Неизвестно';
+  const getRoleLabel = (role) => {
+    switch(role) {
+      case 'WORKER': return 'Рабочий';
+      case 'FOREMAN': return 'Начальник цеха';
+      case 'ADMIN': return 'Администратор';
+      case 'MASTER': return 'Мастер';
+      case 'GUIDE': return 'Экскурсовод';
+      default: return 'Неизвестно';
+    }
+  };
+  
+  const roleLabel = getRoleLabel(userData?.role);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';

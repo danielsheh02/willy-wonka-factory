@@ -32,6 +32,18 @@ const columns = [
     )
   },
   { 
+    field: "capacity", 
+    headerName: "Вместимость", 
+    width: 120,
+    valueGetter: (params) => params.row.capacity || '-'
+  },
+  { 
+    field: "visitDurationMinutes", 
+    headerName: "Длительность (мин)", 
+    width: 150,
+    valueGetter: (params) => params.row.visitDurationMinutes || '-'
+  },
+  { 
     field: "foremans", 
     headerName: "Начальники", 
     flex: 1,
@@ -80,7 +92,13 @@ export default function WorkshopsPage() {
       const foremanIds = item.foremans?.map(f => f.id) || [];
       setSelected({ ...item, foremanIds });
     } else {
-      setSelected({ name: "", description: "", foremanIds: [] });
+      setSelected({ 
+        name: "", 
+        description: "", 
+        capacity: null, 
+        visitDurationMinutes: 15, 
+        foremanIds: [] 
+      });
     }
     setOpen(true); 
   };
@@ -96,6 +114,8 @@ export default function WorkshopsPage() {
       const payload = {
         name: selected.name,
         description: selected.description,
+        capacity: selected.capacity,
+        visitDurationMinutes: selected.visitDurationMinutes,
         foremanIds: selected.foremanIds || []
       };
       
@@ -171,6 +191,24 @@ export default function WorkshopsPage() {
             rows={3}
             value={selected?.description || ""} 
             onChange={e => setSelected(t => ({ ...t, description: e.target.value }))} 
+          />
+          <TextField 
+            label="Вместимость (количество человек)" 
+            margin="dense" 
+            fullWidth 
+            type="number"
+            inputProps={{ min: 1 }}
+            value={selected?.capacity || ""} 
+            onChange={e => setSelected(t => ({ ...t, capacity: e.target.value ? parseInt(e.target.value) : null }))} 
+          />
+          <TextField 
+            label="Длительность посещения (минуты)" 
+            margin="dense" 
+            fullWidth 
+            type="number"
+            inputProps={{ min: 5, max: 120 }}
+            value={selected?.visitDurationMinutes || ""} 
+            onChange={e => setSelected(t => ({ ...t, visitDurationMinutes: e.target.value ? parseInt(e.target.value) : null }))} 
           />
           <FormControl margin="dense" fullWidth>
             <InputLabel>Начальники цеха</InputLabel>

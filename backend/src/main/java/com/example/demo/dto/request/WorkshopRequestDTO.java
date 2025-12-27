@@ -6,6 +6,8 @@ public class WorkshopRequestDTO {
 
     private String name;
     private String description;
+    private Integer capacity;
+    private Integer visitDurationMinutes;
     private Set<Long> foremanIds;
     private Set<Long> equipmentIds;
 
@@ -39,5 +41,21 @@ public class WorkshopRequestDTO {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Integer getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(Integer capacity) {
+        this.capacity = capacity;
+    }
+
+    public Integer getVisitDurationMinutes() {
+        return visitDurationMinutes;
+    }
+
+    public void setVisitDurationMinutes(Integer visitDurationMinutes) {
+        this.visitDurationMinutes = visitDurationMinutes;
     }
 }

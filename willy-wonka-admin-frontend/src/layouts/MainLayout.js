@@ -9,6 +9,7 @@ const navItems = [
   { path: "/users", label: "Сотрудники" },
   { path: "/equipment", label: "Оборудование" },
   { path: "/workshops", label: "Цеха" },
+  { path: "/excursions", label: "Экскурсии" },
   { path: "/profile", label: "Профиль" }
 ];
 

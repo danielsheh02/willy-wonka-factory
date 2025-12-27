@@ -75,6 +75,17 @@ export default function TasksPage() {
   const [notification, setNotification] = useState("");
   const [filterMode, setFilterMode] = useState("all"); // "all" или "my"
 
+  const getRoleLabel = (role) => {
+    switch(role) {
+      case 'WORKER': return 'Рабочий';
+      case 'FOREMAN': return 'Начальник';
+      case 'ADMIN': return 'Администратор';
+      case 'MASTER': return 'Мастер';
+      case 'GUIDE': return 'Экскурсовод';
+      default: return role;
+    }
+  };
+
   const fetchTasks = async () => {
     setLoading(true);
     const { data } = await api.get(`${API_URL}/api/tasks`);
@@ -246,7 +257,7 @@ export default function TasksPage() {
             >
               {users.map(u => (
                 <MenuItem value={u.id} key={u.id}>
-                  {u.username} (ID: {u.id}) - {u.role === 'WORKER' ? 'Рабочий' : 'Начальник'}
+                  {u.username} (ID: {u.id}) - {getRoleLabel(u.role)}
                 </MenuItem>
               ))}
             </Select>

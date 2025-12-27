@@ -42,7 +42,10 @@ const columns = [
 
 const ROLES = [
   { value: "WORKER", label: "Рабочий" },
-  { value: "FOREMAN", label: "Начальник цеха" }
+  { value: "FOREMAN", label: "Начальник цеха" },
+  { value: "ADMIN", label: "Администратор" },
+  { value: "MASTER", label: "Мастер" },
+  { value: "GUIDE", label: "Экскурсовод" }
 ];
 
 export default function UsersPage() {
