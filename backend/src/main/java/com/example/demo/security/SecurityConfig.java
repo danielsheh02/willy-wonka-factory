@@ -58,7 +58,13 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**",
                                 "/api/auth/signin",
-                                "/api/auth/signup")
+                                "/api/auth/signup",
+                                // Публичные endpoints для золотых билетов
+                                "/api/excursions",
+                                "/api/excursions/statuses",
+                                "/api/tickets/validate/**",
+                                "/api/tickets/book",
+                                "/api/tickets/*/cancel")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER", "GUIDE")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER", "GUIDE")

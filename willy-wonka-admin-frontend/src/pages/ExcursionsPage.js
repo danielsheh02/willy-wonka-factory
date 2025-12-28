@@ -4,12 +4,14 @@ import {
   Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, 
   TextField, Snackbar, Alert, MenuItem, FormControl, InputLabel, Select,
   Chip, Stack, IconButton, Stepper, Step, StepLabel, Card, CardContent,
-  Switch, FormControlLabel, List, ListItem, ListItemText, Paper
+  Switch, FormControlLabel, List, ListItem, ListItemText, Paper, Divider
 } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 import api, { API_URL } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -29,92 +31,17 @@ const statusLabels = {
   'CANCELLED': 'Отменена'
 };
 
-const columns = [
-  { 
-    field: "id", 
-    headerName: "ID", 
-    width: 70
-  },
-  { 
-    field: "name", 
-    headerName: "Название", 
-    flex: 1.5,
-    minWidth: 180,
-    renderCell: (params) => (
-      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
-        {params.value}
-      </div>
-    )
-  },
-  { 
-    field: "startTime", 
-    headerName: "Начало", 
-    width: 150,
-    valueFormatter: (params) => {
-      if (!params.value) return '-';
-      const date = new Date(params.value);
-      return date.toLocaleString('ru-RU', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-  },
-  { 
-    field: "endTime", 
-    headerName: "Окончание", 
-    width: 150,
-    valueFormatter: (params) => {
-      if (!params.value) return '-';
-      const date = new Date(params.value);
-      return date.toLocaleString('ru-RU', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-  },
-  { 
-    field: "participantsCount", 
-    headerName: "Участников", 
-    width: 110
-  },
-  { 
-    field: "guideName", 
-    headerName: "Экскурсовод", 
-    flex: 1,
-    minWidth: 150
-  },
-  { 
-    field: "status", 
-    headerName: "Статус", 
-    width: 140,
-    renderCell: (params) => (
-      <Chip 
-        label={statusLabels[params.value] || params.value} 
-        color={statusColors[params.value] || 'default'}
-        size="small"
-      />
-    )
-  },
-  {
-    field: "routesCount",
-    headerName: "Цехов в маршруте",
-    width: 140,
-    valueGetter: (params) => params.row.routes?.length || 0
-  }
-];
+// Колонки будут определены внутри компонента, чтобы иметь доступ к обработчикам
 
 export default function ExcursionsPage() {
   const { user } = useAuth();
   const [excursions, setExcursions] = useState([]);
+  const [excursionsWithBookings, setExcursionsWithBookings] = useState([]); // Экскурсии с информацией о бронированиях
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false); // Диалог просмотра
   const [selectedExcursion, setSelectedExcursion] = useState(null);
+  const [viewExcursion, setViewExcursion] = useState(null); // Экскурсия для просмотра
   const [statuses, setStatuses] = useState([]);
   const [users, setUsers] = useState([]);
   const [workshops, setWorkshops] = useState([]);
@@ -125,12 +52,30 @@ export default function ExcursionsPage() {
   const [availabilityCheck, setAvailabilityCheck] = useState(null);
   const [minRequiredWorkshops, setMinRequiredWorkshops] = useState(0); // 0 = максимально возможное
   const [formError, setFormError] = useState(""); // Ошибки формы
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [excursionToDelete, setExcursionToDelete] = useState(null);
 
   const fetchExcursions = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get(`${API_URL}/api/excursions`);
       setExcursions(data);
+      
+      // Получаем информацию о бронированиях для каждой экскурсии
+      const ticketsResponse = await api.get(`${API_URL}/api/tickets`);
+      const tickets = ticketsResponse.data;
+      
+      const excursionsWithBookingInfo = data.map(excursion => {
+        const bookedTickets = tickets.filter(
+          ticket => ticket.excursionId === excursion.id && ticket.status === 'BOOKED'
+        );
+        return {
+          ...excursion,
+          bookedCount: bookedTickets.length
+        };
+      });
+      
+      setExcursionsWithBookings(excursionsWithBookingInfo);
     } catch (error) {
       console.error("Ошибка загрузки экскурсий:", error);
       setNotification("Ошибка загрузки экскурсий");
@@ -172,12 +117,30 @@ export default function ExcursionsPage() {
     fetchWorkshops();
   }, [fetchExcursions, fetchStatuses, fetchUsers, fetchWorkshops]);
 
+  const handleView = (excursion) => {
+    setViewExcursion(excursion);
+    setViewDialogOpen(true);
+  };
+
+  const handleCloseView = () => {
+    setViewDialogOpen(false);
+    setViewExcursion(null);
+  };
+
+  const handleEdit = (excursion) => {
+    setSelectedExcursion(excursion);
+    setAutoGenerate(false);
+    setManualRoutes(excursion.routes || []);
+    setMinRequiredWorkshops(0);
+    setActiveStep(0);
+    setAvailabilityCheck(null);
+    setFormError("");
+    setOpen(true);
+  };
+
   const handleOpen = (excursion) => {
     if (excursion) {
-      setSelectedExcursion(excursion);
-      setAutoGenerate(false);
-      setManualRoutes(excursion.routes || []);
-      setMinRequiredWorkshops(0);
+      handleEdit(excursion);
     } else {
       setSelectedExcursion({ 
         name: "", 
@@ -189,11 +152,11 @@ export default function ExcursionsPage() {
       setAutoGenerate(true);
       setManualRoutes([]);
       setMinRequiredWorkshops(0);
+      setActiveStep(0);
+      setAvailabilityCheck(null);
+      setFormError("");
+      setOpen(true);
     }
-    setActiveStep(0);
-    setAvailabilityCheck(null);
-    setFormError("");
-    setOpen(true);
   };
 
   const handleClose = () => { 
@@ -331,6 +294,184 @@ export default function ExcursionsPage() {
       setNotification("Ошибка при удалении");
     }
   };
+
+  // Используем useCallback для стабильности функций
+  const handleViewCallback = useCallback((excursion) => {
+    setViewExcursion(excursion);
+    setViewDialogOpen(true);
+  }, []);
+
+  const handleEditCallback = useCallback((excursion) => {
+    setSelectedExcursion(excursion);
+    setAutoGenerate(false);
+    setManualRoutes(excursion.routes || []);
+    setMinRequiredWorkshops(0);
+    setActiveStep(0);
+    setAvailabilityCheck(null);
+    setFormError("");
+    setOpen(true);
+  }, []);
+
+  const handleDeleteCallback = useCallback((excursion) => {
+    setExcursionToDelete(excursion);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = async () => {
+    if (excursionToDelete) {
+      try {
+        await api.delete(`${API_URL}/api/excursions/${excursionToDelete.id}`);
+        fetchExcursions();
+        setNotification("Экскурсия удалена");
+      } catch (error) {
+        console.error("Ошибка удаления:", error);
+        setNotification("Ошибка при удалении");
+      }
+    }
+    setDeleteDialogOpen(false);
+    setExcursionToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setExcursionToDelete(null);
+  };
+
+  const columns = useMemo(() => [
+    { 
+      field: "id", 
+      headerName: "ID", 
+      width: 70
+    },
+    { 
+      field: "name", 
+      headerName: "Название", 
+      flex: 1.5,
+      minWidth: 180,
+      renderCell: (params) => (
+        <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+          {params.value}
+        </div>
+      )
+    },
+    { 
+      field: "startTime", 
+      headerName: "Начало", 
+      width: 150,
+      valueFormatter: (params) => {
+        if (!params.value) return '-';
+        const date = new Date(params.value);
+        return date.toLocaleString('ru-RU', { 
+          year: 'numeric', 
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    },
+    { 
+      field: "endTime", 
+      headerName: "Окончание", 
+      width: 150,
+      valueFormatter: (params) => {
+        if (!params.value) return '-';
+        const date = new Date(params.value);
+        return date.toLocaleString('ru-RU', { 
+          year: 'numeric', 
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    },
+    { 
+      field: "participantsCount", 
+      headerName: "Места", 
+      width: 130,
+      renderCell: (params) => {
+        const booked = params.row.bookedCount || 0;
+        const total = params.row.participantsCount || 0;
+        const color = booked >= total ? 'error' : booked > total * 0.7 ? 'warning' : 'success';
+        return (
+          <Chip 
+            label={`${booked}/${total}`}
+            color={color}
+            size="small"
+            variant="outlined"
+          />
+        );
+      }
+    },
+    { 
+      field: "guideName", 
+      headerName: "Экскурсовод", 
+      flex: 1,
+      minWidth: 150
+    },
+    { 
+      field: "status", 
+      headerName: "Статус", 
+      width: 140,
+      renderCell: (params) => (
+        <Chip 
+          label={statusLabels[params.value] || params.value} 
+          color={statusColors[params.value] || 'default'}
+          size="small"
+        />
+      )
+    },
+    {
+      field: "routesCount",
+      headerName: "Цехов",
+      width: 90,
+      valueGetter: (params) => params.row.routes?.length || 0
+    },
+    {
+      field: "actions",
+      headerName: "Действия",
+      width: 140,
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <IconButton 
+            size="small" 
+            color="info"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewCallback(params.row);
+            }}
+            title="Просмотр"
+          >
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            color="primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditCallback(params.row);
+            }}
+            title="Редактировать"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteCallback(params.row);
+            }}
+            title="Удалить"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )
+    }
+  ], [handleViewCallback, handleEditCallback, handleDeleteCallback]);
 
   const renderStepContent = () => {
     switch (activeStep) {
@@ -637,7 +778,7 @@ export default function ExcursionsPage() {
       ) : (
         <Box sx={{ flexGrow: 1, minHeight: 0 }}>
           <DataGrid
-            rows={excursions}
+            rows={excursionsWithBookings}
             columns={columns}
             pageSizeOptions={[10, 25, 50, 100]}
             initialState={{
@@ -649,7 +790,6 @@ export default function ExcursionsPage() {
               },
             }}
             getRowHeight={() => 'auto'}
-            onRowDoubleClick={({ row }) => handleOpen(row)}
             sx={{
               background: "#fff",
               '& .MuiDataGrid-cell': {
@@ -701,6 +841,183 @@ export default function ExcursionsPage() {
               {selectedExcursion?.id ? "Обновить" : "Создать"}
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог подтверждения удаления */}
+      <Dialog open={deleteDialogOpen} onClose={cancelDelete}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить экскурсию <strong>{excursionToDelete?.name}</strong>?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Это действие нельзя будет отменить.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete}>Отмена</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог просмотра экскурсии */}
+      <Dialog open={viewDialogOpen} onClose={handleCloseView} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Детали экскурсии</Typography>
+            <Chip 
+              label={statusLabels[viewExcursion?.status] || viewExcursion?.status} 
+              color={statusColors[viewExcursion?.status] || 'default'}
+            />
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {viewExcursion && (
+            <Box>
+              {/* Основная информация */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    {viewExcursion.name}
+                  </Typography>
+                  
+                  <Stack spacing={1.5} sx={{ mt: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">ID экскурсии:</Typography>
+                      <Typography variant="body2" fontWeight="bold">#{viewExcursion.id}</Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Экскурсовод:</Typography>
+                      <Typography variant="body2" fontWeight="bold">{viewExcursion.guideUsername}</Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Начало:</Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {new Date(viewExcursion.startTime).toLocaleString('ru-RU')}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Окончание:</Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {viewExcursion.endTime ? new Date(viewExcursion.endTime).toLocaleString('ru-RU') : '-'}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Занято мест:</Typography>
+                      <Chip 
+                        label={`${viewExcursion.bookedCount || 0} / ${viewExcursion.participantsCount}`}
+                        color={
+                          (viewExcursion.bookedCount || 0) >= viewExcursion.participantsCount 
+                            ? 'error' 
+                            : (viewExcursion.bookedCount || 0) > viewExcursion.participantsCount * 0.7 
+                            ? 'warning' 
+                            : 'success'
+                        }
+                        size="small"
+                      />
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Создано:</Typography>
+                      <Typography variant="body2">
+                        {new Date(viewExcursion.createdAt).toLocaleString('ru-RU')}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+
+              {/* Маршрут экскурсии */}
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    📍 Маршрут экскурсии
+                  </Typography>
+                  
+                  {viewExcursion.routes && viewExcursion.routes.length > 0 ? (
+                    <List>
+                      {viewExcursion.routes
+                        .sort((a, b) => a.orderNumber - b.orderNumber)
+                        .map((route, index) => (
+                          <React.Fragment key={route.id}>
+                            {index > 0 && <Divider />}
+                            <ListItem>
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Chip 
+                                      label={route.orderNumber} 
+                                      size="small" 
+                                      color="primary"
+                                      sx={{ minWidth: 40 }}
+                                    />
+                                    <Typography variant="body1" fontWeight="bold">
+                                      {route.workshopName}
+                                    </Typography>
+                                  </Box>
+                                }
+                                secondary={
+                                  <Box sx={{ ml: 6, mt: 1 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      ⏱️ Длительность: <strong>{route.durationMinutes} минут</strong>
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      🕐 Время начала: <strong>{new Date(route.startTime).toLocaleTimeString('ru-RU')}</strong>
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      🕐 Время окончания: <strong>
+                                        {new Date(
+                                          new Date(route.startTime).getTime() + route.durationMinutes * 60000
+                                        ).toLocaleTimeString('ru-RU')}
+                                      </strong>
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                            </ListItem>
+                          </React.Fragment>
+                        ))}
+                    </List>
+                  ) : (
+                    <Alert severity="info">Маршрут еще не составлен</Alert>
+                  )}
+                  
+                  {viewExcursion.routes && viewExcursion.routes.length > 0 && (
+                    <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Общая длительность маршрута:</strong>{' '}
+                        {viewExcursion.routes.reduce((sum, r) => sum + r.durationMinutes, 0)} минут
+                        {' '}({Math.floor(viewExcursion.routes.reduce((sum, r) => sum + r.durationMinutes, 0) / 60)} ч {viewExcursion.routes.reduce((sum, r) => sum + r.durationMinutes, 0) % 60} мин)
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Количество цехов:</strong> {viewExcursion.routes.length}
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseView}>Закрыть</Button>
+          <Button 
+            variant="contained" 
+            startIcon={<EditIcon />}
+            onClick={() => {
+              handleCloseView();
+              handleEdit(viewExcursion);
+            }}
+          >
+            Редактировать
+          </Button>
         </DialogActions>
       </Dialog>
 

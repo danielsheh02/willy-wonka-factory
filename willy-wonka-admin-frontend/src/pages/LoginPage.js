@@ -64,6 +64,9 @@ export default function LoginPage() {
             Войти
           </Button>
           <Button color="secondary" fullWidth sx={{ mt: 1 }} onClick={() => navigate("/register")}>Зарегистрироваться</Button>
+          <Button color="info" variant="outlined" fullWidth sx={{ mt: 1 }} onClick={() => navigate("/booking")}>
+            🎫 Записаться на экскурсию
+          </Button>
         </form>
       </Paper>
     </Box>

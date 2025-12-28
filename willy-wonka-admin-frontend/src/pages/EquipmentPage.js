@@ -1,70 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert } from "@mui/material";
+import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert, IconButton } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api, { API_URL } from "../api";
-
-const columns = [
-  { 
-    field: "id", 
-    headerName: "ID", 
-    width: 70
-  },
-  { 
-    field: "name", 
-    headerName: "Название", 
-    flex: 1,
-    minWidth: 150,
-    renderCell: (params) => (
-      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
-        {params.value}
-      </div>
-    )
-  },
-  { 
-    field: "model", 
-    headerName: "Модель", 
-    flex: 0.8,
-    minWidth: 120,
-    renderCell: (params) => (
-      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
-        {params.value || '-'}
-      </div>
-    )
-  },
-  { 
-    field: "status", 
-    headerName: "Статус", 
-    width: 120
-  },
-  { 
-    field: "health", 
-    headerName: "Состояние", 
-    width: 110
-  },
-  { 
-    field: "temperature", 
-    headerName: "Температура", 
-    width: 120
-  },
-  { 
-    field: "workshopId", 
-    headerName: "ID Цеха", 
-    width: 100,
-    valueGetter: (params) => params.row.workshop?.id 
-  },
-  { 
-    field: "workshopName", 
-    headerName: "Цех", 
-    flex: 0.8,
-    minWidth: 120,
-    valueGetter: (params) => params.row.workshop?.name,
-    renderCell: (params) => (
-      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
-        {params.value || '-'}
-      </div>
-    )
-  },
-];
 
 export default function EquipmentPage() {
   const [data, setData] = useState([]);
@@ -74,6 +13,8 @@ export default function EquipmentPage() {
   const [statuses, setStatuses] = useState([]);
   const [workshops, setWorkshops] = useState([]);
   const [notification, setNotification] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -129,6 +70,131 @@ export default function EquipmentPage() {
   };
   const handleDelete = async (id) => { await api.delete(`${API_URL}/api/equipments/${id}`); fetchData(); setNotification("Оборудование удалено"); };
 
+  const handleEditCallback = useCallback((item) => {
+    setSelected(item);
+    setOpen(true);
+  }, []);
+
+  const handleDeleteCallback = useCallback((item) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = async () => {
+    if (itemToDelete) {
+      try {
+        await api.delete(`${API_URL}/api/equipments/${itemToDelete.id}`);
+        fetchData();
+        setNotification("Оборудование удалено");
+      } catch (error) {
+        console.error("Ошибка удаления:", error);
+        setNotification("Ошибка при удалении");
+      }
+    }
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
+  const columns = useMemo(() => [
+    { 
+      field: "id", 
+      headerName: "ID", 
+      width: 70
+    },
+    { 
+      field: "name", 
+      headerName: "Название", 
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+          {params.value}
+        </div>
+      )
+    },
+    { 
+      field: "model", 
+      headerName: "Модель", 
+      flex: 0.8,
+      minWidth: 120,
+      renderCell: (params) => (
+        <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+          {params.value || '-'}
+        </div>
+      )
+    },
+    { 
+      field: "status", 
+      headerName: "Статус", 
+      width: 120
+    },
+    { 
+      field: "health", 
+      headerName: "Состояние", 
+      width: 110
+    },
+    { 
+      field: "temperature", 
+      headerName: "Температура", 
+      width: 120
+    },
+    { 
+      field: "workshopId", 
+      headerName: "ID Цеха", 
+      width: 100,
+      valueGetter: (params) => params.row.workshop?.id 
+    },
+    { 
+      field: "workshopName", 
+      headerName: "Цех", 
+      flex: 0.8,
+      minWidth: 120,
+      valueGetter: (params) => params.row.workshop?.name,
+      renderCell: (params) => (
+        <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+          {params.value || '-'}
+        </div>
+      )
+    },
+    {
+      field: "actions",
+      headerName: "Действия",
+      width: 120,
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <IconButton 
+            size="small" 
+            color="primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditCallback(params.row);
+            }}
+            title="Редактировать"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteCallback(params.row);
+            }}
+            title="Удалить"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )
+    }
+  ], [handleEditCallback, handleDeleteCallback]);
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -158,7 +224,6 @@ export default function EquipmentPage() {
               },
             }}
             getRowHeight={() => 'auto'}
-            onRowDoubleClick={({ row }) => handleOpen(row)} 
             sx={{
               background:"#fff",
               '& .MuiDataGrid-cell': {
@@ -249,6 +314,25 @@ export default function EquipmentPage() {
           <Button onClick={handleSave} variant="contained">Сохранить</Button>
         </DialogActions>
       </Dialog>
+      {/* Диалог подтверждения удаления */}
+      <Dialog open={deleteDialogOpen} onClose={cancelDelete}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить оборудование <strong>{itemToDelete?.name}</strong>?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Это действие нельзя будет отменить.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete}>Отмена</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar open={!!notification} autoHideDuration={3000} onClose={() => setNotification("")}>
       {notification ? (
         <Alert severity="info">

@@ -1,44 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, MenuItem, FormControl, InputLabel, Select } from "@mui/material";
+import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, MenuItem, FormControl, InputLabel, Select, IconButton } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api, { API_URL } from "../api";
-
-const columns = [
-  { 
-    field: "id", 
-    headerName: "ID", 
-    width: 80
-  },
-  { 
-    field: "username", 
-    headerName: "Логин", 
-    flex: 1,
-    minWidth: 150
-  },
-  { 
-    field: "role", 
-    headerName: "Роль", 
-    width: 160
-  },
-  { 
-    field: "isBanned", 
-    headerName: "Заблокирован", 
-    width: 130,
-    valueGetter: (params) => params.row.isBanned ? "Да" : "Нет" 
-  },
-  { 
-    field: "workshops", 
-    headerName: "Цеха", 
-    flex: 1.5,
-    minWidth: 200,
-    valueGetter: (params) => params.row.workshops?.map(w => w.name).join(", ") || "-",
-    renderCell: (params) => (
-      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
-        {params.value}
-      </div>
-    )
-  },
-];
 
 const ROLES = [
   { value: "WORKER", label: "Рабочий" },
@@ -53,6 +18,8 @@ export default function UsersPage() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [notification, setNotification] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   const fetchUsers = async () => {
     const { data } = await api.get(`${API_URL}/api/users`);
@@ -91,6 +58,105 @@ export default function UsersPage() {
   };
   const handleDelete = async (id) => { await api.delete(`${API_URL}/api/users/${id}`); fetchUsers(); setNotification("Пользователь удалён"); };
 
+  const handleEditCallback = useCallback((user) => {
+    setSelected(user);
+    setOpen(true);
+  }, []);
+
+  const handleDeleteCallback = useCallback((user) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = async () => {
+    if (userToDelete) {
+      try {
+        await api.delete(`${API_URL}/api/users/${userToDelete.id}`);
+        fetchUsers();
+        setNotification("Пользователь удалён");
+      } catch (error) {
+        console.error("Ошибка удаления:", error);
+        setNotification("Ошибка при удалении");
+      }
+    }
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
+  const columns = useMemo(() => [
+    { 
+      field: "id", 
+      headerName: "ID", 
+      width: 80
+    },
+    { 
+      field: "username", 
+      headerName: "Логин", 
+      flex: 1,
+      minWidth: 150
+    },
+    { 
+      field: "role", 
+      headerName: "Роль", 
+      width: 160
+    },
+    { 
+      field: "isBanned", 
+      headerName: "Заблокирован", 
+      width: 130,
+      valueGetter: (params) => params.row.isBanned ? "Да" : "Нет" 
+    },
+    { 
+      field: "workshops", 
+      headerName: "Цеха", 
+      flex: 1.5,
+      minWidth: 200,
+      valueGetter: (params) => params.row.workshops?.map(w => w.name).join(", ") || "-",
+      renderCell: (params) => (
+        <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+          {params.value}
+        </div>
+      )
+    },
+    {
+      field: "actions",
+      headerName: "Действия",
+      width: 120,
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <IconButton 
+            size="small" 
+            color="primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditCallback(params.row);
+            }}
+            title="Редактировать"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteCallback(params.row);
+            }}
+            title="Удалить"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )
+    }
+  ], [handleEditCallback, handleDeleteCallback]);
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -118,7 +184,6 @@ export default function UsersPage() {
             },
           }}
           getRowHeight={() => 'auto'}
-          onRowDoubleClick={({ row }) => handleOpen(row)} 
           sx={{ 
             background: "#fff",
             '& .MuiDataGrid-cell': {
@@ -166,6 +231,25 @@ export default function UsersPage() {
           <Button onClick={handleSave} variant="contained">Сохранить</Button>
         </DialogActions>
       </Dialog>
+      {/* Диалог подтверждения удаления */}
+      <Dialog open={deleteDialogOpen} onClose={cancelDelete}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить пользователя <strong>{userToDelete?.username}</strong>?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Это действие нельзя будет отменить.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete}>Отмена</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar open={!!notification} autoHideDuration={3000} onClose={() => setNotification("")}>
       {notification ? (
         <Alert severity="info">

@@ -10,6 +10,7 @@ const navItems = [
   { path: "/equipment", label: "Оборудование" },
   { path: "/workshops", label: "Цеха" },
   { path: "/excursions", label: "Экскурсии" },
+  { path: "/tickets", label: "Золотые билеты" },
   { path: "/profile", label: "Профиль" }
 ];
 

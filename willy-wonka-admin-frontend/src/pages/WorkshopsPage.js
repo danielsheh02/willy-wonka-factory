@@ -1,67 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, FormControl, InputLabel, Select, MenuItem, Chip } from "@mui/material";
+import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, FormControl, InputLabel, Select, MenuItem, Chip, IconButton } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api, { API_URL } from "../api";
-
-const columns = [
-  { 
-    field: "id", 
-    headerName: "ID", 
-    width: 70
-  },
-  { 
-    field: "name", 
-    headerName: "Название", 
-    flex: 1,
-    minWidth: 150,
-    renderCell: (params) => (
-      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
-        {params.value}
-      </div>
-    )
-  },
-  { 
-    field: "description", 
-    headerName: "Описание", 
-    flex: 1.5,
-    minWidth: 200,
-    renderCell: (params) => (
-      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
-        {params.value || '-'}
-      </div>
-    )
-  },
-  { 
-    field: "capacity", 
-    headerName: "Вместимость", 
-    width: 120,
-    valueGetter: (params) => params.row.capacity || '-'
-  },
-  { 
-    field: "visitDurationMinutes", 
-    headerName: "Длительность (мин)", 
-    width: 150,
-    valueGetter: (params) => params.row.visitDurationMinutes || '-'
-  },
-  { 
-    field: "foremans", 
-    headerName: "Начальники", 
-    flex: 1,
-    minWidth: 150,
-    valueGetter: (params) => params.row.foremans?.map(f => f.username).join(", ") || "-",
-    renderCell: (params) => (
-      <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
-        {params.value}
-      </div>
-    )
-  },
-  { 
-    field: "equipments", 
-    headerName: "Оборудование", 
-    width: 140,
-    valueGetter: (params) => params.row.equipments?.length || 0 
-  },
-];
 
 export default function WorkshopsPage() {
   const [list, setList] = useState([]);
@@ -69,6 +11,8 @@ export default function WorkshopsPage() {
   const [selected, setSelected] = useState(null);
   const [users, setUsers] = useState([]);
   const [notification, setNotification] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [workshopToDelete, setWorkshopToDelete] = useState(null);
   const fetchList = async () => {
     const { data } = await api.get(`${API_URL}/api/workshops`);
     setList(data);
@@ -135,6 +79,131 @@ export default function WorkshopsPage() {
   };
   const handleDelete = async (id) => { await api.delete(`${API_URL}/api/workshops/${id}`); fetchList(); setNotification("Цех удалён"); };
 
+  const handleEditCallback = useCallback((item) => {
+    if (item) {
+      const foremanIds = item.foremans?.map(f => f.id) || [];
+      setSelected({ ...item, foremanIds });
+    }
+    setOpen(true);
+  }, []);
+
+  const handleDeleteCallback = useCallback((workshop) => {
+    setWorkshopToDelete(workshop);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = async () => {
+    if (workshopToDelete) {
+      try {
+        await api.delete(`${API_URL}/api/workshops/${workshopToDelete.id}`);
+        fetchList();
+        setNotification("Цех удалён");
+      } catch (error) {
+        console.error("Ошибка удаления:", error);
+        setNotification("Ошибка при удалении");
+      }
+    }
+    setDeleteDialogOpen(false);
+    setWorkshopToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setWorkshopToDelete(null);
+  };
+
+  const columns = useMemo(() => [
+    { 
+      field: "id", 
+      headerName: "ID", 
+      width: 70
+    },
+    { 
+      field: "name", 
+      headerName: "Название", 
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+          {params.value}
+        </div>
+      )
+    },
+    { 
+      field: "description", 
+      headerName: "Описание", 
+      flex: 1.5,
+      minWidth: 200,
+      renderCell: (params) => (
+        <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+          {params.value || '-'}
+        </div>
+      )
+    },
+    { 
+      field: "capacity", 
+      headerName: "Вместимость", 
+      width: 120,
+      valueGetter: (params) => params.row.capacity || '-'
+    },
+    { 
+      field: "visitDurationMinutes", 
+      headerName: "Длительность (мин)", 
+      width: 150,
+      valueGetter: (params) => params.row.visitDurationMinutes || '-'
+    },
+    { 
+      field: "foremans", 
+      headerName: "Начальники", 
+      flex: 1,
+      minWidth: 150,
+      valueGetter: (params) => params.row.foremans?.map(f => f.username).join(", ") || "-",
+      renderCell: (params) => (
+        <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.5' }}>
+          {params.value}
+        </div>
+      )
+    },
+    { 
+      field: "equipments", 
+      headerName: "Оборудование", 
+      width: 120,
+      valueGetter: (params) => params.row.equipments?.length || 0 
+    },
+    {
+      field: "actions",
+      headerName: "Действия",
+      width: 120,
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <IconButton 
+            size="small" 
+            color="primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditCallback(params.row);
+            }}
+            title="Редактировать"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton 
+            size="small" 
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteCallback(params.row);
+            }}
+            title="Удалить"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )
+    }
+  ], [handleEditCallback, handleDeleteCallback]);
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -163,7 +232,6 @@ export default function WorkshopsPage() {
             },
           }}
           getRowHeight={() => 'auto'}
-          onRowDoubleClick={({ row }) => handleOpen(row)} 
           sx={{
             background:"#fff",
             '& .MuiDataGrid-cell': {
@@ -247,6 +315,25 @@ export default function WorkshopsPage() {
           <Button onClick={handleSave} variant="contained">Сохранить</Button>
         </DialogActions>
       </Dialog>
+      {/* Диалог подтверждения удаления */}
+      <Dialog open={deleteDialogOpen} onClose={cancelDelete}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить цех <strong>{workshopToDelete?.name}</strong>?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Это действие нельзя будет отменить.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete}>Отмена</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar open={!!notification} autoHideDuration={3000} onClose={() => setNotification("")}>
       {notification ? (
         <Alert severity="info">
