@@ -123,6 +123,8 @@ export default function ExcursionsPage() {
   const [autoGenerate, setAutoGenerate] = useState(true);
   const [manualRoutes, setManualRoutes] = useState([]);
   const [availabilityCheck, setAvailabilityCheck] = useState(null);
+  const [minRequiredWorkshops, setMinRequiredWorkshops] = useState(0); // 0 = максимально возможное
+  const [formError, setFormError] = useState(""); // Ошибки формы
 
   const fetchExcursions = useCallback(async () => {
     setLoading(true);
@@ -175,6 +177,7 @@ export default function ExcursionsPage() {
       setSelectedExcursion(excursion);
       setAutoGenerate(false);
       setManualRoutes(excursion.routes || []);
+      setMinRequiredWorkshops(0);
     } else {
       setSelectedExcursion({ 
         name: "", 
@@ -185,9 +188,11 @@ export default function ExcursionsPage() {
       });
       setAutoGenerate(true);
       setManualRoutes([]);
+      setMinRequiredWorkshops(0);
     }
     setActiveStep(0);
     setAvailabilityCheck(null);
+    setFormError("");
     setOpen(true);
   };
 
@@ -197,6 +202,7 @@ export default function ExcursionsPage() {
     setActiveStep(0);
     setManualRoutes([]);
     setAvailabilityCheck(null);
+    setFormError("");
   };
 
   const handleNext = () => {
@@ -213,6 +219,7 @@ export default function ExcursionsPage() {
       orderNumber: manualRoutes.length + 1,
       durationMinutes: 15
     }]);
+    setFormError("");
   };
 
   const handleRemoveRoutePoint = (index) => {
@@ -222,12 +229,14 @@ export default function ExcursionsPage() {
       route.orderNumber = i + 1;
     });
     setManualRoutes(newRoutes);
+    setFormError("");
   };
 
   const handleRoutePointChange = (index, field, value) => {
     const newRoutes = [...manualRoutes];
     newRoutes[index][field] = value;
     setManualRoutes(newRoutes);
+    setFormError("");
   };
 
   const checkAvailability = async () => {
@@ -278,7 +287,8 @@ export default function ExcursionsPage() {
       guideId: guideId,
       status: selectedExcursion.status,
       autoGenerateRoute: autoGenerate,
-      routes: autoGenerate ? null : manualRoutes.filter(r => r.workshopId)
+      routes: autoGenerate ? null : manualRoutes.filter(r => r.workshopId),
+      minRequiredWorkshops: autoGenerate ? (minRequiredWorkshops > 0 ? minRequiredWorkshops : null) : null
     };
 
     try {
@@ -306,12 +316,8 @@ export default function ExcursionsPage() {
         }
       }
       
-      setNotification(errorMessage);
-      setAvailabilityCheck({
-        available: false,
-        message: errorMessage,
-        conflicts: [errorMessage]
-      });
+      // Отображаем ошибку в форме вместо notification
+      setFormError(errorMessage);
     }
   };
 
@@ -337,7 +343,10 @@ export default function ExcursionsPage() {
               fullWidth
               required
               value={selectedExcursion?.name || ""}
-              onChange={e => setSelectedExcursion(t => ({ ...t, name: e.target.value }))}
+              onChange={e => {
+                setSelectedExcursion(t => ({ ...t, name: e.target.value }));
+                setFormError("");
+              }}
             />
             <TextField
               label="Дата и время начала"
@@ -347,7 +356,10 @@ export default function ExcursionsPage() {
               required
               InputLabelProps={{ shrink: true }}
               value={selectedExcursion?.startTime || ""}
-              onChange={e => setSelectedExcursion(t => ({ ...t, startTime: e.target.value }))}
+              onChange={e => {
+                setSelectedExcursion(t => ({ ...t, startTime: e.target.value }));
+                setFormError("");
+              }}
             />
             <TextField
               label="Количество участников"
@@ -357,13 +369,19 @@ export default function ExcursionsPage() {
               required
               inputProps={{ min: 1 }}
               value={selectedExcursion?.participantsCount || 10}
-              onChange={e => setSelectedExcursion(t => ({ ...t, participantsCount: parseInt(e.target.value) }))}
+              onChange={e => {
+                setSelectedExcursion(t => ({ ...t, participantsCount: parseInt(e.target.value) }));
+                setFormError("");
+              }}
             />
             <FormControl margin="dense" fullWidth required>
               <InputLabel>Экскурсовод</InputLabel>
               <Select
                 value={selectedExcursion?.guideId || selectedExcursion?.guide?.id || ""}
-                onChange={e => setSelectedExcursion(t => ({ ...t, guideId: e.target.value }))}
+                onChange={e => {
+                  setSelectedExcursion(t => ({ ...t, guideId: e.target.value }));
+                  setFormError("");
+                }}
                 label="Экскурсовод"
                 MenuProps={{
                   PaperProps: {
@@ -384,7 +402,10 @@ export default function ExcursionsPage() {
               <InputLabel>Статус</InputLabel>
               <Select
                 value={selectedExcursion?.status || "DRAFT"}
-                onChange={e => setSelectedExcursion(t => ({ ...t, status: e.target.value }))}
+                onChange={e => {
+                  setSelectedExcursion(t => ({ ...t, status: e.target.value }));
+                  setFormError("");
+                }}
                 label="Статус"
                 MenuProps={{
                   PaperProps: {
@@ -417,9 +438,12 @@ export default function ExcursionsPage() {
                   checked={autoGenerate}
                   onChange={(e) => {
                     setAutoGenerate(e.target.checked);
+                    // Очищаем все ошибки при переключении режима
+                    setFormError("");
+                    setAvailabilityCheck(null);
+                    setNotification("");
                     if (e.target.checked) {
                       setManualRoutes([]);
-                      setAvailabilityCheck(null);
                     }
                   }}
                 />
@@ -432,6 +456,41 @@ export default function ExcursionsPage() {
                 : "Вы можете вручную составить маршрут экскурсии"
               }
             </Typography>
+
+            {/* Отображение ошибок формы */}
+            {formError && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setFormError("")}>
+                {formError}
+              </Alert>
+            )}
+
+            {autoGenerate && (
+              <Box sx={{ mb: 3 }}>
+                <TextField
+                  label="Минимальное количество цехов"
+                  type="number"
+                  fullWidth
+                  margin="dense"
+                  value={minRequiredWorkshops}
+                  onChange={e => {
+                    setMinRequiredWorkshops(parseInt(e.target.value) || 0);
+                    setFormError(""); // Сбрасываем ошибки при изменении
+                  }}
+                  helperText={
+                    minRequiredWorkshops > 0 
+                      ? `Экскурсия должна пройти минимум через ${minRequiredWorkshops} цехов` 
+                      : "0 = максимально возможное количество цехов"
+                  }
+                  inputProps={{ min: 0 }}
+                />
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  {minRequiredWorkshops > 0 
+                    ? `Будет создан маршрут минимум через ${minRequiredWorkshops} цехов. Если указанное количество недоступно - вы получите ошибку.`
+                    : "Будет создан маршрут через максимально возможное количество доступных цехов."
+                  }
+                </Alert>
+              </Box>
+            )}
 
             {!autoGenerate && (
               <Box>

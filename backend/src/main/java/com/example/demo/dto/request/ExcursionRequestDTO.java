@@ -14,6 +14,7 @@ public class ExcursionRequestDTO {
     private ExcursionStatus status;
     private List<RoutePointDTO> routes; // Для ручного создания маршрута
     private Boolean autoGenerateRoute; // Флаг для автоматического построения маршрута
+    private Integer minRequiredWorkshops; // Минимальное количество цехов для посещения (null = максимально возможное)
 
     public static class RoutePointDTO {
         private Long workshopId;
@@ -120,6 +121,14 @@ public class ExcursionRequestDTO {
 
     public void setAutoGenerateRoute(Boolean autoGenerateRoute) {
         this.autoGenerateRoute = autoGenerateRoute;
+    }
+
+    public Integer getMinRequiredWorkshops() {
+        return minRequiredWorkshops;
+    }
+
+    public void setMinRequiredWorkshops(Integer minRequiredWorkshops) {
+        this.minRequiredWorkshops = minRequiredWorkshops;
     }
 }
 

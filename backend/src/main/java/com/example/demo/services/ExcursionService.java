@@ -98,7 +98,7 @@ public class ExcursionService {
         // Создание маршрута
         if (dto.getAutoGenerateRoute() != null && dto.getAutoGenerateRoute()) {
             // Автоматическое построение маршрута
-            List<ExcursionRoute> routes = generateAutomaticRoute(excursion);
+            List<ExcursionRoute> routes = generateAutomaticRoute(excursion, dto.getMinRequiredWorkshops());
             
             // ЖЕСТКАЯ ПРОВЕРКА: Если не удалось построить маршрут - ЗАПРЕЩАЕМ создание
             if (routes.isEmpty()) {
@@ -193,7 +193,7 @@ public class ExcursionService {
         if (dto.getAutoGenerateRoute() != null && dto.getAutoGenerateRoute()) {
             // Удаляем старый маршрут и создаем новый
             excursion.getRoutes().clear();
-            List<ExcursionRoute> routes = generateAutomaticRoute(excursion);
+            List<ExcursionRoute> routes = generateAutomaticRoute(excursion, dto.getMinRequiredWorkshops());
             
             // ЖЕСТКАЯ ПРОВЕРКА: Если не удалось построить маршрут - ЗАПРЕЩАЕМ обновление
             if (routes.isEmpty()) {
@@ -218,47 +218,141 @@ public class ExcursionService {
     }
 
     // Автоматическое построение маршрута с учетом занятости цехов
-    private List<ExcursionRoute> generateAutomaticRoute(Excursion excursion) {
+    // УЛУЧШЕННЫЙ АЛГОРИТМ: сначала ищем доступный цех в текущее время, только потом сдвигаем время
+    private List<ExcursionRoute> generateAutomaticRoute(Excursion excursion, Integer requestedMinWorkshops) {
         List<Workshop> allWorkshops = workshopRepository.findAll();
+        
+        // Фильтруем цеха, которые подходят по вместимости
+        List<Workshop> suitableWorkshops = allWorkshops.stream()
+            .filter(w -> w.getCapacity() == null || w.getCapacity() >= excursion.getParticipantsCount())
+            .collect(Collectors.toList());
+        
+        // Проверяем, есть ли хотя бы один подходящий цех
+        if (suitableWorkshops.isEmpty()) {
+            throw new RuntimeException("Нет цехов, подходящих для группы из " + 
+                excursion.getParticipantsCount() + " человек. Все цеха имеют меньшую вместимость.");
+        }
+        
+        // Определяем минимальное требуемое количество цехов
+        int minRequiredWorkshops;
+        if (requestedMinWorkshops == null || requestedMinWorkshops <= 0) {
+            // Если не указано или указано "максимально возможно" (0 или null) - пытаемся посетить все
+            minRequiredWorkshops = suitableWorkshops.size();
+        } else {
+            // Проверяем, не запрашивает ли пользователь больше, чем доступно
+            if (requestedMinWorkshops > suitableWorkshops.size()) {
+                throw new RuntimeException("Запрошено посещение минимум " + requestedMinWorkshops + 
+                    " цехов, но для группы из " + excursion.getParticipantsCount() + 
+                    " человек доступно только " + suitableWorkshops.size() + " цехов с подходящей вместимостью. " +
+                    "Уменьшите количество цехов или размер группы.");
+            }
+            minRequiredWorkshops = requestedMinWorkshops;
+        }
+        
+        Set<Long> visitedWorkshops = new HashSet<>(); // Отслеживаем посещенные цеха
         List<ExcursionRoute> routes = new ArrayList<>();
         
         LocalDateTime currentTime = excursion.getStartTime();
+        LocalDateTime maxTime = currentTime.plusHours(8); // Максимум 8 часов на экскурсию
         int orderNumber = 1;
-
-        // Сортируем цеха по имени для детерминированности
-        allWorkshops.sort(Comparator.comparing(Workshop::getName));
-
-        for (Workshop workshop : allWorkshops) {
-            // Получаем стандартную длительность или используем 15 минут по умолчанию
-            int duration = workshop.getVisitDurationMinutes() != null ? 
-                          workshop.getVisitDurationMinutes() : 15;
-
-            // Пытаемся найти свободное время для посещения этого цеха с учетом вместимости
-            LocalDateTime availableTime = findAvailableTimeSlot(
-                workshop, 
-                currentTime, 
-                duration, 
-                excursion.getId(),
-                excursion.getParticipantsCount()
-            );
-
-            if (availableTime != null) {
+        int noProgressCounter = 0; // Счетчик попыток без прогресса
+        
+        // Продолжаем, пока не посетим все ПОДХОДЯЩИЕ цеха или не достигнем максимального времени
+        while (visitedWorkshops.size() < suitableWorkshops.size() && currentTime.isBefore(maxTime)) {
+            Workshop selectedWorkshop = null;
+            int selectedDuration = 15;
+            
+            // Ищем ЛЮБОЙ доступный цех в текущее время
+            for (Workshop workshop : suitableWorkshops) {
+                // Пропускаем уже посещенные цеха
+                if (visitedWorkshops.contains(workshop.getId())) {
+                    continue;
+                }
+                
+                int duration = workshop.getVisitDurationMinutes() != null ? 
+                              workshop.getVisitDurationMinutes() : 15;
+                
+                // Проверяем доступность цеха в текущее время
+                if (isWorkshopAvailableAtTime(workshop, currentTime, duration, 
+                                             excursion.getId(), excursion.getParticipantsCount())) {
+                    selectedWorkshop = workshop;
+                    selectedDuration = duration;
+                    break; // Нашли доступный цех - берем его
+                }
+            }
+            
+            if (selectedWorkshop != null) {
+                // Нашли доступный цех - добавляем в маршрут
                 ExcursionRoute route = new ExcursionRoute();
                 route.setExcursion(excursion);
-                route.setWorkshop(workshop);
+                route.setWorkshop(selectedWorkshop);
                 route.setOrderNumber(orderNumber++);
-                route.setStartTime(availableTime);
-                route.setDurationMinutes(duration);
+                route.setStartTime(currentTime);
+                route.setDurationMinutes(selectedDuration);
                 
                 route = routeRepository.save(route);
                 routes.add(route);
-
-                // Обновляем текущее время для следующего цеха
-                currentTime = availableTime.plusMinutes(duration);
+                
+                visitedWorkshops.add(selectedWorkshop.getId());
+                currentTime = currentTime.plusMinutes(selectedDuration);
+                noProgressCounter = 0; // Сбрасываем счетчик
+            } else {
+                // Все подходящие цеха заняты в текущее время - сдвигаем время на 15 минут
+                currentTime = currentTime.plusMinutes(15);
+                noProgressCounter++;
+                
+                // Если слишком долго не можем найти цех - прерываем
+                if (noProgressCounter > 20) { // 20 * 15 минут = 5 часов без прогресса
+                    break;
+                }
             }
+        }
+        
+        // Проверяем, удалось ли посетить требуемое количество цехов
+        if (routes.size() < minRequiredWorkshops) {
+            // Не удалось построить маршрут с требуемым количеством цехов
+            // Возвращаем пустой список (обработка ошибки будет в вызывающем коде)
+            return new ArrayList<>();
         }
 
         return routes;
+    }
+    
+    // Проверка доступности цеха в конкретное время
+    private boolean isWorkshopAvailableAtTime(Workshop workshop, LocalDateTime startTime, 
+                                              int duration, Long excursionId, Integer participantsCount) {
+        LocalDateTime endTime = startTime.plusMinutes(duration);
+        
+        // Проверяем вместимость цеха
+        if (workshop.getCapacity() != null) {
+            Integer currentOccupancy = routeRepository.getTotalParticipantsInWorkshop(
+                workshop.getId(), 
+                startTime, 
+                endTime
+            );
+            
+            // Если редактируем экскурсию, вычитаем её участников
+            if (excursionId != null) {
+                List<ExcursionRoute> currentExcursionRoutes = routeRepository.findConflictingRoutes(
+                    workshop.getId(), startTime, endTime
+                ).stream()
+                    .filter(r -> r.getExcursion().getId().equals(excursionId))
+                    .collect(Collectors.toList());
+                
+                if (!currentExcursionRoutes.isEmpty()) {
+                    currentOccupancy -= currentExcursionRoutes.get(0).getExcursion().getParticipantsCount();
+                }
+            }
+            
+            int totalWithNewGroup = currentOccupancy + participantsCount;
+            
+            // Проверяем, помещается ли группа
+            if (totalWithNewGroup > workshop.getCapacity()) {
+                return false;
+            }
+        }
+        
+        return true; // Цех доступен
     }
 
     // Создание маршрута вручную с проверкой доступности
@@ -303,10 +397,13 @@ public class ExcursionService {
                 int totalWithNewGroup = currentOccupancy + excursion.getParticipantsCount();
                 
                 if (totalWithNewGroup > workshop.getCapacity()) {
-                    throw new RuntimeException("Цех '" + workshop.getName() + 
-                        "' перегружен в период с " + currentTime + " по " + endTime + 
-                        ": текущая занятость " + currentOccupancy + ", новая группа " + 
-                        excursion.getParticipantsCount() + ", вместимость " + workshop.getCapacity());
+                    String message = "Цех '" + workshop.getName() + "' перегружен в период с " + currentTime + " по " + endTime + ": ";
+                    if (currentOccupancy == 0) {
+                        message += "ваша группа из " + excursion.getParticipantsCount() + " человек не помещается (вместимость цеха: " + workshop.getCapacity() + " чел.)";
+                    } else {
+                        message += "уже занято " + currentOccupancy + " мест, ваша группа " + excursion.getParticipantsCount() + " чел., вместимость " + workshop.getCapacity() + " чел. (не хватает " + (totalWithNewGroup - workshop.getCapacity()) + " мест)";
+                    }
+                    throw new RuntimeException(message);
                 }
             }
 
@@ -326,75 +423,6 @@ public class ExcursionService {
         return routes;
     }
 
-    // Найти ближайшее свободное время для посещения цеха с учетом вместимости
-    private LocalDateTime findAvailableTimeSlot(Workshop workshop, LocalDateTime preferredStart, 
-                                               int duration, Long excursionId, Integer participantsCount) {
-        LocalDateTime currentAttempt = preferredStart;
-        LocalDateTime maxTime = preferredStart.plusHours(8); // Ищем в пределах 8 часов
-
-        while (currentAttempt.isBefore(maxTime)) {
-            LocalDateTime endTime = currentAttempt.plusMinutes(duration);
-            
-            // Проверяем суммарную вместимость (если она задана)
-            boolean capacityAvailable = true;
-            if (workshop.getCapacity() != null) {  // null = бесконечная вместимость
-                Integer currentOccupancy = routeRepository.getTotalParticipantsInWorkshop(
-                    workshop.getId(), 
-                    currentAttempt, 
-                    endTime
-                );
-                
-                // Если редактируем экскурсию, вычитаем её участников
-                if (excursionId != null) {
-                    List<ExcursionRoute> currentExcursionRoutes = routeRepository.findConflictingRoutes(
-                        workshop.getId(), currentAttempt, endTime
-                    ).stream()
-                        .filter(r -> r.getExcursion().getId().equals(excursionId))
-                        .collect(Collectors.toList());
-                    
-                    if (!currentExcursionRoutes.isEmpty()) {
-                        currentOccupancy -= currentExcursionRoutes.get(0).getExcursion().getParticipantsCount();
-                    }
-                }
-                
-                int totalWithNewGroup = currentOccupancy + participantsCount;
-                capacityAvailable = (totalWithNewGroup <= workshop.getCapacity());
-            }
-            
-            if (capacityAvailable) {
-                return currentAttempt;
-            }
-
-            // Если нет места, пробуем после окончания самого раннего конфликтующего маршрута
-            List<ExcursionRoute> conflicts = routeRepository.findConflictingRoutes(
-                workshop.getId(), 
-                currentAttempt, 
-                endTime
-            );
-            
-            if (!conflicts.isEmpty()) {
-                // Исключаем текущую экскурсию
-                conflicts = conflicts.stream()
-                        .filter(r -> !r.getExcursion().getId().equals(excursionId))
-                        .collect(Collectors.toList());
-                
-                if (!conflicts.isEmpty()) {
-                    LocalDateTime earliestEnd = conflicts.stream()
-                            .map(r -> r.getStartTime().plusMinutes(r.getDurationMinutes()))
-                            .min(LocalDateTime::compareTo)
-                            .orElse(currentAttempt.plusMinutes(15));
-                    
-                    currentAttempt = earliestEnd;
-                } else {
-                    currentAttempt = currentAttempt.plusMinutes(15); // Сдвигаем на 15 минут
-                }
-            } else {
-                currentAttempt = currentAttempt.plusMinutes(15); // Сдвигаем на 15 минут
-            }
-        }
-
-        return null; // Не нашли свободное время
-    }
 
     // Проверка доступности маршрута
     public Map<String, Object> checkRouteAvailability(ExcursionRequestDTO dto) {
@@ -473,9 +501,16 @@ public class ExcursionService {
                 int totalWithNewGroup = currentOccupancy + dto.getParticipantsCount();
                 
                 if (totalWithNewGroup > workshop.getCapacity()) {
-                    conflicts.add("Цех '" + workshop.getName() + "' перегружен: текущая занятость " + 
-                        currentOccupancy + ", новая группа " + dto.getParticipantsCount() + 
-                        ", вместимость " + workshop.getCapacity());
+                    String conflictMessage;
+                    if (currentOccupancy == 0) {
+                        conflictMessage = "Цех '" + workshop.getName() + "': группа из " + dto.getParticipantsCount() + 
+                            " человек не помещается (вместимость: " + workshop.getCapacity() + " чел.)";
+                    } else {
+                        conflictMessage = "Цех '" + workshop.getName() + "': уже занято " + currentOccupancy + 
+                            " мест, ваша группа " + dto.getParticipantsCount() + " чел., вместимость " + 
+                            workshop.getCapacity() + " чел. (не хватает " + (totalWithNewGroup - workshop.getCapacity()) + " мест)";
+                    }
+                    conflicts.add(conflictMessage);
                     isAvailable = false;
                 }
             }
