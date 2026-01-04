@@ -6,6 +6,7 @@ import {
 } from "@mui/material";
 import api, { API_URL } from "../api";
 import { usePermissions } from "../hooks/usePermissions";
+import { formatDate } from "../utils/dateUtils";
 
 const statusLabels = {
   ACTIVE: "Активный",
@@ -55,19 +56,16 @@ const columns = [
   {
     field: "generatedAt",
     headerName: "Создан",
-    width: 110,
-    valueFormatter: (params) => {
-      if (!params.value) return "-";
-      return new Date(params.value).toLocaleDateString("ru-RU");
-    }
+    width: 150,
+    valueFormatter: (params) => formatDate(params.value)
   },
   {
     field: "expiresAt",
     headerName: "Истекает",
-    width: 110,
+    width: 150,
     valueFormatter: (params) => {
       if (!params.value) return "Бессрочно";
-      return new Date(params.value).toLocaleDateString("ru-RU");
+      return formatDate(params.value);
     }
   }
 ];

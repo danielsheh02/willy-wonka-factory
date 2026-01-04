@@ -17,6 +17,7 @@ import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { notificationsAPI } from "../api";
+import { parseUTCDate } from "../utils/dateUtils";
 
 const NotificationBell = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -104,9 +105,11 @@ const NotificationBell = () => {
     }
   };
 
-  // Форматирование даты
+  // Форматирование даты (с учетом UTC)
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = parseUTCDate(dateString); // Парсим UTC дату
+    if (!date) return "-";
+    
     const now = new Date();
     const diff = now - date;
     const minutes = Math.floor(diff / 60000);
@@ -185,7 +188,16 @@ const NotificationBell = () => {
               <Box sx={{ width: "100%", display: "flex", gap: 1, alignItems: "flex-start" }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.5 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: notification.isRead ? 400 : 600 }}>
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          fontWeight: notification.isRead ? 400 : 600,
+                          whiteSpace: 'normal',
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word',
+                          wordBreak: 'break-word'
+                        }}
+                      >
                         {notification.title}
                       </Typography>
                       <Chip 
@@ -195,7 +207,17 @@ const NotificationBell = () => {
                         sx={{ height: 20, fontSize: "0.7rem" }}
                       />
                     </Stack>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      <Typography 
+                        variant="body2" 
+                        color="text.secondary" 
+                        sx={{ 
+                          mt: 0.5,
+                          whiteSpace: 'normal',
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word',
+                          wordBreak: 'break-word'
+                        }}
+                      >
                         {notification.message}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>

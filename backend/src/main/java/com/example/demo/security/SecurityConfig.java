@@ -94,10 +94,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("FOREMAN", "ADMIN")
                         
                         // Задачи - все могут читать, PUT для всех (проверка владельца на уровне сервиса)
+                        .requestMatchers(HttpMethod.POST, "/api/tasks/distribute").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/tasks/unassigned").hasAnyRole("FOREMAN", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/tasks/**").hasAnyRole("FOREMAN", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasAnyRole("FOREMAN", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/tasks/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
                         .requestMatchers(HttpMethod.PUT, "/api/tasks/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
+                        
+                        // Отчеты - только FOREMAN и ADMIN
+                        .requestMatchers("/api/reports/**").hasAnyRole("FOREMAN", "ADMIN")
                         
                         // Остальные GET запросы
                         .requestMatchers(HttpMethod.GET, "/api/**").authenticated()

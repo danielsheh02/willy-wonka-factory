@@ -15,6 +15,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import api, { API_URL } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { usePermissions } from "../hooks/usePermissions";
+import { utcToLocalInputValue, formatDateTime, formatDateTimeShort, formatTime, toUTCString, parseUTCDate } from "../utils/dateUtils";
 
 const statusColors = {
   'DRAFT': 'default',
@@ -130,7 +131,15 @@ export default function ExcursionsPage() {
   };
 
   const handleEdit = (excursion) => {
-    setSelectedExcursion(excursion);
+    // Конвертируем UTC время в локальное для input type="datetime-local"
+    const localStartTime = excursion.startTime 
+      ? parseUTCDate(excursion.startTime).toISOString().slice(0, 16) 
+      : "";
+    
+    setSelectedExcursion({
+      ...excursion,
+      startTime: localStartTime
+    });
     setAutoGenerate(false);
     setManualRoutes(excursion.routes || []);
     setMinRequiredWorkshops(0);
@@ -245,9 +254,12 @@ export default function ExcursionsPage() {
       return;
     }
 
+    // Конвертируем локальное время в UTC перед отправкой на сервер
+    const startTimeUTC = toUTCString(selectedExcursion.startTime);
+
     const dataToSend = {
       name: selectedExcursion.name,
-      startTime: selectedExcursion.startTime,
+      startTime: startTimeUTC,
       participantsCount: selectedExcursion.participantsCount,
       guideId: guideId,
       status: selectedExcursion.status,
@@ -304,7 +316,11 @@ export default function ExcursionsPage() {
   }, []);
 
   const handleEditCallback = useCallback((excursion) => {
-    setSelectedExcursion(excursion);
+    setSelectedExcursion({
+      ...excursion,
+      startTime: utcToLocalInputValue(excursion.startTime)
+    });
+
     setAutoGenerate(false);
     setManualRoutes(excursion.routes || []);
     setMinRequiredWorkshops(0);
@@ -360,33 +376,13 @@ export default function ExcursionsPage() {
       field: "startTime", 
       headerName: "Начало", 
       width: 150,
-      valueFormatter: (params) => {
-        if (!params.value) return '-';
-        const date = new Date(params.value);
-        return date.toLocaleString('ru-RU', { 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      }
+      valueFormatter: (params) => formatDateTimeShort(params.value)
     },
     { 
       field: "endTime", 
       headerName: "Окончание", 
       width: 150,
-      valueFormatter: (params) => {
-        if (!params.value) return '-';
-        const date = new Date(params.value);
-        return date.toLocaleString('ru-RU', { 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      }
+      valueFormatter: (params) => formatDateTimeShort(params.value)
     },
     { 
       field: "participantsCount", 
@@ -415,7 +411,7 @@ export default function ExcursionsPage() {
     { 
       field: "status", 
       headerName: "Статус", 
-      width: 140,
+      width: 180,
       renderCell: (params) => (
         <Chip 
           label={statusLabels[params.value] || params.value} 
@@ -433,7 +429,7 @@ export default function ExcursionsPage() {
     {
       field: "actions",
       headerName: "Действия",
-      width: 140,
+      width: 160,
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -749,7 +745,7 @@ export default function ExcursionsPage() {
                       <ListItem key={route.id} divider>
                         <ListItemText
                           primary={`${route.orderNumber}. ${route.workshopName}`}
-                          secondary={`Длительность: ${route.durationMinutes} мин | Начало: ${new Date(route.startTime).toLocaleTimeString('ru-RU')}`}
+                          secondary={`Длительность: ${route.durationMinutes} мин | Начало: ${formatTime(route.startTime)}`}
                         />
                       </ListItem>
                     ))}
@@ -906,14 +902,14 @@ export default function ExcursionsPage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="text.secondary">Начало:</Typography>
                       <Typography variant="body2" fontWeight="bold">
-                        {new Date(viewExcursion.startTime).toLocaleString('ru-RU')}
+                        {formatDateTime(viewExcursion.startTime)}
                       </Typography>
                     </Box>
                     
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="text.secondary">Окончание:</Typography>
                       <Typography variant="body2" fontWeight="bold">
-                        {viewExcursion.endTime ? new Date(viewExcursion.endTime).toLocaleString('ru-RU') : '-'}
+                        {formatDateTime(viewExcursion.endTime)}
                       </Typography>
                     </Box>
                     
@@ -935,7 +931,7 @@ export default function ExcursionsPage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="text.secondary">Создано:</Typography>
                       <Typography variant="body2">
-                        {new Date(viewExcursion.createdAt).toLocaleString('ru-RU')}
+                        {formatDateTime(viewExcursion.createdAt)}
                       </Typography>
                     </Box>
                   </Stack>
@@ -977,13 +973,13 @@ export default function ExcursionsPage() {
                                       ⏱️ Длительность: <strong>{route.durationMinutes} минут</strong>
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                      🕐 Время начала: <strong>{new Date(route.startTime).toLocaleTimeString('ru-RU')}</strong>
+                                      🕐 Время начала: <strong>{formatTime(route.startTime)}</strong>
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
                                       🕐 Время окончания: <strong>
-                                        {new Date(
-                                          new Date(route.startTime).getTime() + route.durationMinutes * 60000
-                                        ).toLocaleTimeString('ru-RU')}
+                                        {formatTime(
+                                          new Date(parseUTCDate(route.startTime).getTime() + route.durationMinutes * 60000).toISOString()
+                                        )}
                                       </strong>
                                     </Typography>
                                   </Box>

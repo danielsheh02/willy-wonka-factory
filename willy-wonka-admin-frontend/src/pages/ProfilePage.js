@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Typography, Paper, CircularProgress, Chip, Divider, Grid } from "@mui/material";
 import { useAuth } from "../auth/AuthProvider";
 import api, { API_URL } from "../api";
+import { formatDateTime } from "../utils/dateUtils";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -58,18 +59,6 @@ export default function ProfilePage() {
   
   const roleLabel = getRoleLabel(userData?.role);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleString('ru-RU', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const completedTasks = tasks.filter(t => t.status === 'COMPLETED').length;
   const inProgressTasks = tasks.filter(t => t.status === 'IN_PROGRESS').length;
 
@@ -102,7 +91,7 @@ export default function ProfilePage() {
           </Grid>
           <Grid item xs={12}>
             <Typography color="text.secondary" variant="body2">Дата регистрации</Typography>
-            <Typography variant="body1">{formatDate(userData?.createdAt)}</Typography>
+            <Typography variant="body1">{formatDateTime(userData?.createdAt)}</Typography>
           </Grid>
         </Grid>
 

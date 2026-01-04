@@ -8,6 +8,7 @@ import com.example.demo.models.GoldenTicket;
 import com.example.demo.models.TicketStatus;
 import com.example.demo.repositories.ExcursionRepository;
 import com.example.demo.repositories.GoldenTicketRepository;
+import com.example.demo.utils.DateTimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +51,7 @@ public class GoldenTicketService {
         LocalDateTime expiresAt = null;
 
         if (request.getExpiresInDays() != null && request.getExpiresInDays() > 0) {
-            expiresAt = LocalDateTime.now().plusDays(request.getExpiresInDays());
+            expiresAt = DateTimeUtils.nowUTC().plusDays(request.getExpiresInDays());
         }
 
         for (int i = 0; i < request.getCount(); i++) {
@@ -144,7 +145,7 @@ public class GoldenTicketService {
                          ticket.getStatus() == TicketStatus.BOOKED;
         
         // Проверяем срок действия (если указан)
-        if (ticket.getExpiresAt() != null && ticket.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (ticket.getExpiresAt() != null && ticket.getExpiresAt().isBefore(DateTimeUtils.nowUTC())) {
             isValid = false;
         }
 
@@ -166,13 +167,13 @@ public class GoldenTicketService {
             throw new RuntimeException("Билет уже использован или неактивен (статус: " + ticket.getStatus() + ")");
         }
 
-        if (ticket.getExpiresAt() != null && ticket.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (ticket.getExpiresAt() != null && ticket.getExpiresAt().isBefore(DateTimeUtils.nowUTC())) {
             throw new RuntimeException("Срок действия билета истек");
         }
 
         // Если билет уже забронирован, проверяем, что старая экскурсия еще не прошла
         if (ticket.getStatus() == TicketStatus.BOOKED && ticket.getExcursion() != null) {
-            if (ticket.getExcursion().getStartTime().isBefore(LocalDateTime.now())) {
+            if (ticket.getExcursion().getStartTime().isBefore(DateTimeUtils.nowUTC())) {
                 throw new RuntimeException("Экскурсия по этому билету уже прошла. Перезапись невозможна.");
             }
         }
@@ -182,7 +183,7 @@ public class GoldenTicketService {
                 .orElseThrow(() -> new RuntimeException("Экскурсия не найдена"));
 
         // Проверяем, что экскурсия еще не началась
-        if (excursion.getStartTime().isBefore(LocalDateTime.now())) {
+        if (excursion.getStartTime().isBefore(DateTimeUtils.nowUTC())) {
             throw new RuntimeException("Экскурсия уже началась. Запись невозможна.");
         }
 
@@ -202,7 +203,7 @@ public class GoldenTicketService {
         // Бронируем билет (или перезаписываем)
         ticket.setExcursion(excursion);
         ticket.setStatus(TicketStatus.BOOKED);
-        ticket.setBookedAt(LocalDateTime.now());
+        ticket.setBookedAt(DateTimeUtils.nowUTC());
         ticket.setHolderName(request.getHolderName());
         ticket.setHolderEmail(request.getHolderEmail());
         ticket.setHolderPhone(request.getHolderPhone());
@@ -225,7 +226,7 @@ public class GoldenTicketService {
         }
 
         // Проверяем, что экскурсия еще не началась
-        if (ticket.getExcursion() != null && ticket.getExcursion().getStartTime().isBefore(LocalDateTime.now())) {
+        if (ticket.getExcursion() != null && ticket.getExcursion().getStartTime().isBefore(DateTimeUtils.nowUTC())) {
             throw new RuntimeException("Экскурсия уже началась. Отмена невозможна.");
         }
 
@@ -247,7 +248,7 @@ public class GoldenTicketService {
      */
     @Transactional
     public int deactivateTicketsForStartedExcursions() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = DateTimeUtils.nowUTC();
         List<GoldenTicket> ticketsToDeactivate = ticketRepository.findTicketsForStartedExcursions(now);
 
         for (GoldenTicket ticket : ticketsToDeactivate) {
@@ -267,7 +268,7 @@ public class GoldenTicketService {
      */
     @Transactional
     public int deactivateExpiredTickets() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = DateTimeUtils.nowUTC();
         List<GoldenTicket> expiredTickets = ticketRepository.findExpiredTickets(now);
 
         for (GoldenTicket ticket : expiredTickets) {

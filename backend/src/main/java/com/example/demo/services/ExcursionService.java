@@ -8,6 +8,7 @@ import com.example.demo.repositories.ExcursionRepository;
 import com.example.demo.repositories.ExcursionRouteRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.WorkshopRepository;
+import com.example.demo.utils.DateTimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -570,6 +571,83 @@ public class ExcursionService {
             excursion.getCreatedAt(),
             routeDTOs
         );
+    }
+    
+    /**
+     * Автоматическое обновление статусов экскурсий (для планировщика)
+     * Изменяет статусы на IN_PROGRESS или COMPLETED в зависимости от времени
+     */
+    @Transactional
+    public Map<String, Integer> updateExcursionStatuses() {
+        LocalDateTime now = DateTimeUtils.nowUTC();
+        
+        int startedCount = startExcursions(now);
+        int completedCount = completeExcursions(now);
+        
+        Map<String, Integer> result = new HashMap<>();
+        result.put("started", startedCount);
+        result.put("completed", completedCount);
+        
+        return result;
+    }
+    
+    /**
+     * Изменяет статус экскурсий на IN_PROGRESS, если наступило время начала
+     */
+    private int startExcursions(LocalDateTime now) {
+        List<Excursion> excursionsToStart = excursionRepository.findAll().stream()
+            .filter(e -> e.getStatus() == ExcursionStatus.CONFIRMED) // Только подтвержденные
+            .filter(e -> e.getStartTime() != null)
+            .filter(e -> !e.getStartTime().isAfter(now)) // Время начала <= текущего времени (UTC)
+            .collect(Collectors.toList());
+        
+        for (Excursion excursion : excursionsToStart) {
+            excursion.setStatus(ExcursionStatus.IN_PROGRESS);
+            excursionRepository.save(excursion);
+            System.out.println("[Excursion UTC] Начата: #" + excursion.getId() + " '" + 
+                             excursion.getName() + "' (время начала UTC: " + excursion.getStartTime() + ")");
+        }
+        
+        return excursionsToStart.size();
+    }
+    
+    /**
+     * Изменяет статус экскурсий на COMPLETED, если наступило время окончания
+     */
+    private int completeExcursions(LocalDateTime now) {
+        List<Excursion> excursionsToComplete = excursionRepository.findAll().stream()
+            .filter(e -> e.getStatus() == ExcursionStatus.IN_PROGRESS) // Только в процессе
+            .filter(e -> {
+                // Рассчитываем время окончания экскурсии
+                LocalDateTime endTime = calculateExcursionEndTime(e);
+                return endTime != null && !endTime.isAfter(now); // Время окончания <= текущего времени
+            })
+            .collect(Collectors.toList());
+        
+        for (Excursion excursion : excursionsToComplete) {
+            excursion.setStatus(ExcursionStatus.COMPLETED);
+            excursionRepository.save(excursion);
+            System.out.println("[Excursion UTC] Завершена: #" + excursion.getId() + " '" + 
+                             excursion.getName() + "'");
+        }
+        
+        return excursionsToComplete.size();
+    }
+    
+    /**
+     * Вычисляет время окончания экскурсии на основе маршрута
+     */
+    private LocalDateTime calculateExcursionEndTime(Excursion excursion) {
+        if (excursion.getRoutes() == null || excursion.getRoutes().isEmpty()) {
+            // Если нет маршрута, считаем что экскурсия длится 2 часа
+            return excursion.getStartTime().plusHours(2);
+        }
+        
+        // Находим максимальное время окончания последней точки маршрута
+        return excursion.getRoutes().stream()
+            .map(route -> route.getStartTime().plusMinutes(route.getDurationMinutes()))
+            .max(LocalDateTime::compareTo)
+            .orElse(excursion.getStartTime().plusHours(2));
     }
 }
 

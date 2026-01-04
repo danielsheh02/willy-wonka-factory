@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert, ToggleButton, ToggleButtonGroup, IconButton, Chip } from "@mui/material";
+import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert, ToggleButton, ToggleButtonGroup, IconButton, Chip, FormControlLabel, Checkbox } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import PeopleIcon from "@mui/icons-material/People";
 import EditIcon from '@mui/icons-material/Edit';
@@ -10,6 +10,7 @@ import AssignmentReturnIcon from '@mui/icons-material/AssignmentReturn';
 import api, { API_URL } from "../api";
 import { useAuth } from "../auth/AuthProvider";
 import { usePermissions } from "../hooks/usePermissions";
+import { formatDate } from "../utils/dateUtils";
 
 export default function TasksPage() {
   const { user } = useAuth();
@@ -90,7 +91,8 @@ export default function TasksPage() {
       name: selectedTask.name,
       description: selectedTask.description,
       status: selectedTask.status,
-      userId: userId
+      userId: userId,
+      force: selectedTask.force || false
     };
     
     try {
@@ -105,7 +107,12 @@ export default function TasksPage() {
       handleClose();
     } catch (e) { 
       console.error(e);
-      setNotification("Ошибка при сохранении"); 
+      // Проверяем статус ошибки
+      if (e.response?.status === 409) {
+        setNotification("У выбранного рабочего превышен лимит активных задач. Используйте принудительное назначение или выберите другого рабочего.");
+      } else {
+        setNotification(e.response?.data || "Ошибка при сохранении");
+      }
     }
   };
   const handleDelete = async (id) => {
@@ -237,11 +244,7 @@ export default function TasksPage() {
       field: "createdAt", 
       headerName: "Создано", 
       width: 180,
-      valueFormatter: (params) => {
-        if (!params.value) return '-';
-        const date = new Date(params.value);
-        return date.toLocaleDateString('ru-RU');
-      }
+      valueFormatter: (params) => formatDate(params.value)
     },
     {
       field: "actions",
@@ -438,6 +441,27 @@ export default function TasksPage() {
               {statuses.map(st => <MenuItem value={st} key={st}>{st}</MenuItem>)}
             </Select>
           </FormControl>
+          
+          {selectedTask?.userId && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={selectedTask?.force || false}
+                  onChange={(e) => setSelectedTask(t => ({ ...t, force: e.target.checked }))}
+                  color="warning"
+                />
+              }
+              label={
+                <Typography variant="body2">
+                  Принудительное назначение
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    (игнорировать лимит активных задач)
+                  </Typography>
+                </Typography>
+              }
+              sx={{ mt: 2 }}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           {selectedTask?.id && <Button color="error" onClick={() => { handleDelete(selectedTask.id); handleClose(); }}>Удалить</Button>}

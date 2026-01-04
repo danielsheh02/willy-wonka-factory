@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.example.demo.utils.DateTimeUtils;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -32,7 +33,7 @@ public class Task {
 
     @PrePersist
     public void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = DateTimeUtils.nowUTC();
     }
 
     public Long getId() {

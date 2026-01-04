@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.example.demo.utils.DateTimeUtils;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
@@ -47,7 +48,7 @@ public class GoldenTicket {
 
     @PrePersist
     protected void onCreate() {
-        generatedAt = LocalDateTime.now();
+        generatedAt = DateTimeUtils.nowUTC();
         if (status == null) {
             status = TicketStatus.ACTIVE;
         }

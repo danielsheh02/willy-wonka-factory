@@ -6,6 +6,7 @@ import {
   Snackbar
 } from "@mui/material";
 import api, { API_URL } from "../api";
+import { formatDateTime, parseUTCDate } from "../utils/dateUtils";
 
 const steps = ["Введите номер билета", "Выберите экскурсию", "Введите данные", "Подтверждение"];
 
@@ -54,7 +55,7 @@ export default function PublicBookingPage() {
       const { data } = await api.get(`${API_URL}/api/excursions`);
       // Фильтруем только будущие подтвержденные экскурсии
       const availableExcursions = data.filter(
-        (exc) => exc.status === "CONFIRMED" && new Date(exc.startTime) > new Date()
+        (exc) => exc.status === "CONFIRMED" && parseUTCDate(exc.startTime) > new Date()
       );
       setExcursions(availableExcursions);
     } catch (err) {
@@ -103,7 +104,7 @@ export default function PublicBookingPage() {
             setValidationError("Срок действия этого билета истек");
           } else if (status === 'CANCELLED') {
             setValidationError("Этот билет был отменен");
-          } else if (data.ticket.expiresAt && new Date(data.ticket.expiresAt) < new Date()) {
+          } else if (data.ticket.expiresAt && parseUTCDate(data.ticket.expiresAt) < new Date()) {
             setValidationError("Срок действия этого билета истек");
           } else {
             setValidationError("Билет недействителен. Статус: " + status);
@@ -310,7 +311,7 @@ export default function PublicBookingPage() {
                           secondary={
                             <>
                               <Typography component="span" variant="body2">
-                                📅 {new Date(excursion.startTime).toLocaleString("ru-RU")}
+                                📅 {formatDateTime(excursion.startTime)}
                               </Typography>
                               <br />
                               <Typography component="span" variant="body2">
@@ -350,7 +351,7 @@ export default function PublicBookingPage() {
             <Alert severity="info" sx={{ mb: 3 }}>
               Экскурсия: <strong>{selectedExcursion.name}</strong>
               <br />
-              Дата: {new Date(selectedExcursion.startTime).toLocaleString("ru-RU")}
+              Дата: {formatDateTime(selectedExcursion.startTime)}
             </Alert>
 
             <TextField
@@ -434,7 +435,7 @@ export default function PublicBookingPage() {
                 Дата и время:
               </Typography>
               <Typography variant="body1">
-                {new Date(bookingResult.excursionStartTime).toLocaleString("ru-RU")}
+                {formatDateTime(bookingResult.excursionStartTime)}
               </Typography>
             </Box>
 
@@ -481,9 +482,7 @@ export default function PublicBookingPage() {
                     Дата и время:
                   </Typography>
                   <Typography variant="body1">
-                    {ticketValid.excursionStartTime 
-                      ? new Date(ticketValid.excursionStartTime).toLocaleString("ru-RU")
-                      : "-"}
+                    {formatDateTime(ticketValid.excursionStartTime)}
                   </Typography>
                 </Box>
 
@@ -501,7 +500,7 @@ export default function PublicBookingPage() {
 
                 {/* Проверка, не прошла ли экскурсия */}
                 {ticketValid.excursionStartTime && 
-                 new Date(ticketValid.excursionStartTime) <= new Date() ? (
+                 parseUTCDate(ticketValid.excursionStartTime) <= new Date() ? (
                   <Alert severity="error" sx={{ mb: 3 }}>
                     Экскурсия уже прошла. Перезапись невозможна.
                   </Alert>

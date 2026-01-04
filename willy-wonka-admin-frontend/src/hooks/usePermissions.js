@@ -7,6 +7,7 @@ export const usePermissions = () => {
   const permissions = {
     // Просмотр страниц
     canViewTasks: ['WORKER', 'FOREMAN', 'ADMIN', 'MASTER', 'GUIDE'].includes(role),
+    canViewTaskDistribution: ['FOREMAN', 'ADMIN'].includes(role),
     canViewUsers: ['WORKER', 'FOREMAN', 'ADMIN', 'MASTER', 'GUIDE'].includes(role),
     canViewEquipment: ['WORKER', 'FOREMAN', 'ADMIN', 'MASTER', 'GUIDE'].includes(role),
     canViewWorkshops: ['WORKER', 'FOREMAN', 'ADMIN', 'MASTER', 'GUIDE'].includes(role),
@@ -47,6 +48,12 @@ export const usePermissions = () => {
     // Золотые билеты
     canGenerateTickets: ['ADMIN'].includes(role),
     canViewTicketsDetails: ['ADMIN', 'GUIDE'].includes(role),
+    
+    // Распределение задач
+    canDistributeTasks: ['FOREMAN', 'ADMIN'].includes(role),
+    
+    // Отчеты
+    canViewReports: ['FOREMAN', 'ADMIN'].includes(role),
   };
 
   return permissions;

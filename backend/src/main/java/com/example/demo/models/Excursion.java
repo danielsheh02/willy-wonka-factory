@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.example.demo.utils.DateTimeUtils;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ public class Excursion {
 
     @PrePersist
     public void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = DateTimeUtils.nowUTC();
         if (status == null) {
             status = ExcursionStatus.DRAFT;
         }

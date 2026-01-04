@@ -7,16 +7,17 @@ import com.example.demo.models.*;
 import com.example.demo.models.specifications.TaskSpecification;
 import com.example.demo.repositories.TaskRepository;
 import com.example.demo.repositories.UserRepository;
+import com.example.demo.utils.DateTimeUtils;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class TaskService {
@@ -98,7 +99,7 @@ public class TaskService {
         task.setUser(user);
 
         if (task.getStatus() == TaskStatus.COMPLETED) {
-            task.setCompletedAt(LocalDateTime.now());
+            task.setCompletedAt(DateTimeUtils.nowUTC());
         }
 
         Task savedTask = taskRepository.save(task);
@@ -137,7 +138,7 @@ public class TaskService {
         }
 
         if (task.getStatus() != TaskStatus.COMPLETED && dto.getStatus() == TaskStatus.COMPLETED) {
-            task.setCompletedAt(LocalDateTime.now());
+            task.setCompletedAt(DateTimeUtils.nowUTC());
         }
 
         // Проверяем, изменился ли пользователь
@@ -228,6 +229,125 @@ public class TaskService {
         Task savedTask = taskRepository.save(task);
 
         return Optional.of(savedTask);
+    }
+
+    /**
+     * Автоматическое распределение задач между рабочими
+     * @param taskIds список ID задач для распределения
+     * @param force принудительное распределение (игнорировать лимит)
+     * @return результат распределения
+     */
+    @Transactional
+    public Map<String, Object> distributeTasksAutomatically(List<Long> taskIds, boolean force) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // Получаем задачи для распределения
+        List<Task> tasks = new ArrayList<>();
+        for (Long taskId : taskIds) {
+            Optional<Task> taskOpt = taskRepository.findById(taskId);
+            if (taskOpt.isPresent() && taskOpt.get().getUser() == null) {
+                tasks.add(taskOpt.get());
+            }
+        }
+        
+        if (tasks.isEmpty()) {
+            result.put("success", false);
+            result.put("message", "Нет доступных задач для распределения");
+            result.put("distributedCount", 0);
+            return result;
+        }
+        
+        // Получаем всех рабочих (WORKER, FOREMAN, MASTER, GUIDE могут выполнять задачи)
+        List<User> workers = userRepository.findByRoleIn(
+            List.of(Role.WORKER, Role.FOREMAN, Role.MASTER, Role.GUIDE)
+        );
+        
+        if (workers.isEmpty()) {
+            result.put("success", false);
+            result.put("message", "Нет доступных рабочих для распределения задач");
+            result.put("distributedCount", 0);
+            return result;
+        }
+        
+        // Подсчитываем текущую загруженность каждого рабочего
+        Map<Long, Long> workerLoadMap = new HashMap<>();
+        for (User worker : workers) {
+            long activeTasks = taskRepository.countByUserIdAndStatusNot(worker.getId(), TaskStatus.COMPLETED);
+            workerLoadMap.put(worker.getId(), activeTasks);
+        }
+        
+        // Сортируем рабочих по загруженности (наименее загруженные первые)
+        workers.sort((w1, w2) -> {
+            long load1 = workerLoadMap.get(w1.getId());
+            long load2 = workerLoadMap.get(w2.getId());
+            return Long.compare(load1, load2);
+        });
+        
+        int distributedCount = 0;
+        int skippedCount = 0;
+        List<String> errors = new ArrayList<>();
+        
+        // Распределяем задачи
+        for (Task task : tasks) {
+            boolean assigned = false;
+            
+            // Пытаемся назначить задачу наименее загруженному рабочему
+            for (User worker : workers) {
+                long currentLoad = workerLoadMap.get(worker.getId());
+                
+                // Проверяем лимит задач
+                if (!force && currentLoad >= MAX_ALLOWED_TASKS) {
+                    continue; // Пропускаем перегруженных рабочих
+                }
+                
+                // Назначаем задачу
+                task.setUser(worker);
+                task.setStatus(TaskStatus.IN_PROGRESS);
+                taskRepository.save(task);
+                
+                // Обновляем загруженность
+                workerLoadMap.put(worker.getId(), currentLoad + 1);
+                
+                // Отправляем уведомление
+                notificationService.createTaskAssignedNotification(worker, task.getId(), task.getName());
+                
+                distributedCount++;
+                assigned = true;
+                
+                // Пересортировываем рабочих после назначения
+                workers.sort((w1, w2) -> {
+                    long load1 = workerLoadMap.get(w1.getId());
+                    long load2 = workerLoadMap.get(w2.getId());
+                    return Long.compare(load1, load2);
+                });
+                
+                break;
+            }
+            
+            if (!assigned) {
+                skippedCount++;
+                if (!force) {
+                    errors.add("Задача '" + task.getName() + "' не распределена: все рабочие перегружены");
+                }
+            }
+        }
+        
+        result.put("success", distributedCount > 0);
+        result.put("distributedCount", distributedCount);
+        result.put("skippedCount", skippedCount);
+        result.put("totalTasks", tasks.size());
+        
+        if (distributedCount > 0) {
+            result.put("message", "Распределено задач: " + distributedCount + " из " + tasks.size());
+        } else {
+            result.put("message", "Не удалось распределить задачи. Все рабочие перегружены.");
+        }
+        
+        if (!errors.isEmpty()) {
+            result.put("errors", errors);
+        }
+        
+        return result;
     }
 
 }
