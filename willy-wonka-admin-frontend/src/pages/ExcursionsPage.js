@@ -14,6 +14,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import api, { API_URL } from "../api";
 import { useAuth } from "../auth/AuthProvider";
+import { usePermissions } from "../hooks/usePermissions";
 
 const statusColors = {
   'DRAFT': 'default',
@@ -35,6 +36,7 @@ const statusLabels = {
 
 export default function ExcursionsPage() {
   const { user } = useAuth();
+  const permissions = usePermissions();
   const [excursions, setExcursions] = useState([]);
   const [excursionsWithBookings, setExcursionsWithBookings] = useState([]); // Экскурсии с информацией о бронированиях
   const [loading, setLoading] = useState(true);
@@ -446,28 +448,32 @@ export default function ExcursionsPage() {
           >
             <VisibilityIcon fontSize="small" />
           </IconButton>
-          <IconButton 
-            size="small" 
-            color="primary"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditCallback(params.row);
-            }}
-            title="Редактировать"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton 
-            size="small" 
-            color="error"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteCallback(params.row);
-            }}
-            title="Удалить"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {permissions.canEditExcursion && (
+            <IconButton 
+              size="small" 
+              color="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditCallback(params.row);
+              }}
+              title="Редактировать"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {permissions.canDeleteExcursion && (
+            <IconButton 
+              size="small" 
+              color="error"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteCallback(params.row);
+              }}
+              title="Удалить"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       )
     }
@@ -762,16 +768,18 @@ export default function ExcursionsPage() {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Экскурсии</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          size="small"
-          onClick={() => handleOpen()}
-          sx={{ textTransform: 'none' }}
-          startIcon={<AddIcon />}
-        >
-          Создать экскурсию
-        </Button>
+        {permissions.canCreateExcursion && (
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={() => handleOpen()}
+            sx={{ textTransform: 'none' }}
+            startIcon={<AddIcon />}
+          >
+            Создать экскурсию
+          </Button>
+        )}
       </Box>
       {loading ? (
         <Typography>Загрузка...</Typography>
@@ -1008,16 +1016,18 @@ export default function ExcursionsPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseView}>Закрыть</Button>
-          <Button 
-            variant="contained" 
-            startIcon={<EditIcon />}
-            onClick={() => {
-              handleCloseView();
-              handleEdit(viewExcursion);
-            }}
-          >
-            Редактировать
-          </Button>
+          {permissions.canEditExcursion && (
+            <Button 
+              variant="contained" 
+              startIcon={<EditIcon />}
+              onClick={() => {
+                handleCloseView();
+                handleEdit(viewExcursion);
+              }}
+            >
+              Редактировать
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 

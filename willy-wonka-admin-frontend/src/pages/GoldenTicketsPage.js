@@ -5,6 +5,7 @@ import {
   DialogActions, TextField, Snackbar, Alert, Chip
 } from "@mui/material";
 import api, { API_URL } from "../api";
+import { usePermissions } from "../hooks/usePermissions";
 
 const statusLabels = {
   ACTIVE: "Активный",
@@ -72,6 +73,7 @@ const columns = [
 ];
 
 export default function GoldenTicketsPage() {
+  const permissions = usePermissions();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -132,14 +134,16 @@ export default function GoldenTicketsPage() {
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
         <Typography variant="h4">Золотые билеты</Typography>
-        <Button
-          variant="contained"
-          size="small"
-          onClick={handleOpen}
-          sx={{ textTransform: "none" }}
-        >
-          + Сгенерировать билеты
-        </Button>
+        {permissions.canGenerateTickets && (
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleOpen}
+            sx={{ textTransform: "none" }}
+          >
+            + Сгенерировать билеты
+          </Button>
+        )}
       </Box>
 
       <Box sx={{ flexGrow: 1, minHeight: 0 }}>

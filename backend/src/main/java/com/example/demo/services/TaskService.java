@@ -87,10 +87,17 @@ public class TaskService {
         Task task = new Task();
         task.setName(dto.getName());
         task.setDescription(dto.getDescription());
-        task.setStatus(dto.getStatus());
+        
+        // Если рабочий не указан, автоматически ставим статус NOT_ASSIGNED
+        if (user == null) {
+            task.setStatus(TaskStatus.NOT_ASSIGNED);
+        } else {
+            task.setStatus(dto.getStatus());
+        }
+        
         task.setUser(user);
 
-        if (dto.getStatus() == TaskStatus.COMPLETED) {
+        if (task.getStatus() == TaskStatus.COMPLETED) {
             task.setCompletedAt(LocalDateTime.now());
         }
 
@@ -155,6 +162,72 @@ public class TaskService {
 
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
+    }
+
+    /**
+     * Взять задачу себе (для рабочих)
+     */
+    public Optional<Task> assignTaskToMe(Long taskId, Long userId) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Task task = taskOpt.get();
+        
+        // Проверяем, что задача не назначена
+        if (task.getUser() != null) {
+            throw new RuntimeException("Задача уже назначена другому рабочему");
+        }
+
+        // Находим пользователя
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        User user = userOpt.get();
+
+        // Проверяем лимит активных задач
+        long activeTasks = taskRepository.countByUserIdAndStatusNot(userId, TaskStatus.COMPLETED);
+        if (activeTasks >= MAX_ALLOWED_TASKS) {
+            throw new WorkerOverloadedException("Вы достигли лимита активных задач (" + MAX_ALLOWED_TASKS + ")");
+        }
+
+        // Назначаем задачу и меняем статус на IN_PROGRESS
+        task.setUser(user);
+        task.setStatus(TaskStatus.IN_PROGRESS);
+
+        Task savedTask = taskRepository.save(task);
+
+        // Создаем уведомление
+        notificationService.createTaskAssignedNotification(user, savedTask.getId(), savedTask.getName());
+
+        return Optional.of(savedTask);
+    }
+
+    /**
+     * Отказаться от задачи (для рабочих)
+     */
+    public Optional<Task> unassignTask(Long taskId, Long userId) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Task task = taskOpt.get();
+        
+        // Проверяем, что задача назначена на этого пользователя
+        if (task.getUser() == null || !task.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Эта задача не назначена на вас");
+        }
+
+        // Снимаем назначение и меняем статус на NOT_ASSIGNED
+        task.setUser(null);
+        task.setStatus(TaskStatus.NOT_ASSIGNED);
+
+        Task savedTask = taskRepository.save(task);
+
+        return Optional.of(savedTask);
     }
 
 }

@@ -87,4 +87,32 @@ public class TaskController {
         }
         return ResponseEntity.ok(statusNames);
     }
+
+    /**
+     * Взять задачу себе
+     */
+    @PostMapping("/{id}/assign-to-me")
+    public ResponseEntity<?> assignTaskToMe(@PathVariable Long id, @RequestParam Long userId) {
+        try {
+            return taskService.assignTaskToMe(id, userId)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Отказаться от задачи
+     */
+    @PostMapping("/{id}/unassign")
+    public ResponseEntity<?> unassignTask(@PathVariable Long id, @RequestParam Long userId) {
+        try {
+            return taskService.unassignTask(id, userId)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

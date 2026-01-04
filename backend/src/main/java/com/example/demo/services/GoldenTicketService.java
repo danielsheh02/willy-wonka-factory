@@ -131,33 +131,29 @@ public class GoldenTicketService {
         
         if (ticket == null) {
             result.put("valid", false);
-            result.put("message", "Билет не найден");
             return result;
         }
 
-        // Проверяем статус
-        if (ticket.getStatus() != TicketStatus.ACTIVE) {
-            result.put("valid", false);
-            result.put("message", "Билет уже использован или неактивен");
-            result.put("status", ticket.getStatus());
-            return result;
-        }
+        // Возвращаем информацию о билете в любом случае
+        GoldenTicketResponseDTO ticketDTO = toDTO(ticket);
+        result.put("ticket", ticketDTO);
 
-        // Проверяем срок действия
+        // Билет валиден, если он ACTIVE или BOOKED (для перезаписи)
+        // USED, EXPIRED, CANCELLED - невалидные статусы
+        boolean isValid = ticket.getStatus() == TicketStatus.ACTIVE || 
+                         ticket.getStatus() == TicketStatus.BOOKED;
+        
+        // Проверяем срок действия (если указан)
         if (ticket.getExpiresAt() != null && ticket.getExpiresAt().isBefore(LocalDateTime.now())) {
-            result.put("valid", false);
-            result.put("message", "Срок действия билета истек");
-            return result;
+            isValid = false;
         }
 
-        result.put("valid", true);
-        result.put("message", "Билет действителен");
-        result.put("ticket", toDTO(ticket));
+        result.put("valid", isValid);
         return result;
     }
 
     /**
-     * Забронировать билет на экскурсию
+     * Забронировать билет на экскурсию (или перезаписаться)
      */
     @Transactional
     public GoldenTicketResponseDTO bookTicket(BookTicketRequestDTO request) {
@@ -165,12 +161,20 @@ public class GoldenTicketService {
         GoldenTicket ticket = ticketRepository.findByTicketNumber(request.getTicketNumber())
                 .orElseThrow(() -> new RuntimeException("Билет с номером " + request.getTicketNumber() + " не найден"));
 
-        if (ticket.getStatus() != TicketStatus.ACTIVE) {
+        // Разрешаем бронирование для ACTIVE и BOOKED (перезапись)
+        if (ticket.getStatus() != TicketStatus.ACTIVE && ticket.getStatus() != TicketStatus.BOOKED) {
             throw new RuntimeException("Билет уже использован или неактивен (статус: " + ticket.getStatus() + ")");
         }
 
         if (ticket.getExpiresAt() != null && ticket.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Срок действия билета истек");
+        }
+
+        // Если билет уже забронирован, проверяем, что старая экскурсия еще не прошла
+        if (ticket.getStatus() == TicketStatus.BOOKED && ticket.getExcursion() != null) {
+            if (ticket.getExcursion().getStartTime().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("Экскурсия по этому билету уже прошла. Перезапись невозможна.");
+            }
         }
 
         // Проверяем экскурсию
@@ -182,13 +186,20 @@ public class GoldenTicketService {
             throw new RuntimeException("Экскурсия уже началась. Запись невозможна.");
         }
 
-        // Проверяем количество свободных мест (если задано participantsCount)
+        // Проверяем количество свободных мест
         long bookedCount = ticketRepository.countByExcursionIdAndStatus(excursion.getId(), TicketStatus.BOOKED);
+        
+        // Если это перезапись на ту же экскурсию, не учитываем текущий билет
+        if (ticket.getExcursion() != null && ticket.getExcursion().getId() != null && 
+            ticket.getExcursion().getId().equals(excursion.getId())) {
+            bookedCount--; // Вычитаем текущий билет
+        }
+        
         if (excursion.getParticipantsCount() != null && bookedCount >= excursion.getParticipantsCount()) {
             throw new RuntimeException("На экскурсии нет свободных мест");
         }
 
-        // Бронируем билет
+        // Бронируем билет (или перезаписываем)
         ticket.setExcursion(excursion);
         ticket.setStatus(TicketStatus.BOOKED);
         ticket.setBookedAt(LocalDateTime.now());

@@ -1,22 +1,28 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AppBar, Toolbar, Button, Typography, Box } from "@mui/material";
 import { useAuth } from "../auth/AuthProvider";
+import { usePermissions } from "../hooks/usePermissions";
 import NotificationBell from "../components/NotificationBell";
-
-const navItems = [
-  { path: "/tasks", label: "Задачи" },
-  { path: "/users", label: "Сотрудники" },
-  { path: "/equipment", label: "Оборудование" },
-  { path: "/workshops", label: "Цеха" },
-  { path: "/excursions", label: "Экскурсии" },
-  { path: "/tickets", label: "Золотые билеты" },
-  { path: "/profile", label: "Профиль" }
-];
 
 export default function MainLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const permissions = usePermissions();
+
+  const filteredNavItems = useMemo(() => {
+    const allNavItems = [
+      { path: "/tasks", label: "Задачи", visible: permissions.canViewTasks },
+      { path: "/users", label: "Сотрудники", visible: permissions.canViewUsers },
+      { path: "/equipment", label: "Оборудование", visible: permissions.canViewEquipment },
+      { path: "/workshops", label: "Цеха", visible: permissions.canViewWorkshops },
+      { path: "/excursions", label: "Экскурсии", visible: permissions.canViewExcursions },
+      { path: "/tickets", label: "Золотые билеты", visible: permissions.canViewTickets },
+      { path: "/profile", label: "Профиль", visible: true }
+    ];
+
+    return allNavItems.filter(item => item.visible);
+  }, [permissions]);
 
   return (
     <>
@@ -25,7 +31,7 @@ export default function MainLayout() {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Willy Wonka Admin
           </Typography>
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <Button
               key={item.path}
               color="inherit"

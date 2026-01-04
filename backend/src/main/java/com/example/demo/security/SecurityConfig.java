@@ -59,20 +59,49 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/auth/signin",
                                 "/api/auth/signup",
-                                // Публичные endpoints для золотых билетов
-                                "/api/excursions",
-                                "/api/excursions/statuses",
+                                // Публичные endpoints для золотых билетов и бронирования
                                 "/api/tickets/validate/**",
                                 "/api/tickets/book",
                                 "/api/tickets/*/cancel")
                         .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER", "GUIDE")
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER", "GUIDE")
-                        .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("FOREMAN", "WORKER", "UNKNOWN", "ADMIN", "MASTER", "GUIDE")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
-                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
-                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").hasAnyRole("FOREMAN",
-                                "WORKER", "UNKNOWN", "ADMIN", "MASTER", "GUIDE")
+                        
+                        // Экскурсии - просмотр для всех, управление только для ADMIN и GUIDE
+                        .requestMatchers(HttpMethod.GET, "/api/excursions/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/excursions/**").hasAnyRole("ADMIN", "GUIDE")
+                        .requestMatchers(HttpMethod.PUT, "/api/excursions/**").hasAnyRole("ADMIN", "GUIDE")
+                        .requestMatchers(HttpMethod.DELETE, "/api/excursions/**").hasAnyRole("ADMIN", "GUIDE")
+                        
+                        // Золотые билеты - только ADMIN может генерировать
+                        .requestMatchers(HttpMethod.POST, "/api/tickets/generate").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/tickets/**").hasAnyRole("ADMIN", "GUIDE")
+                        
+                        // Оборудование - создание/редактирование для FOREMAN, ADMIN, MASTER
+                        .requestMatchers(HttpMethod.POST, "/api/equipments/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER")
+                        .requestMatchers(HttpMethod.PUT, "/api/equipments/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/equipments/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/equipments/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
+                        
+                        // Цеха - только FOREMAN и ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/workshops/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/workshops/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/workshops/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/workshops/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
+                        
+                        // Пользователи - только FOREMAN и ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/users/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("FOREMAN", "ADMIN")
+                        
+                        // Задачи - все могут читать, PUT для всех (проверка владельца на уровне сервиса)
+                        .requestMatchers(HttpMethod.POST, "/api/tasks/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/tasks/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
+                        .requestMatchers(HttpMethod.PUT, "/api/tasks/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
+                        
+                        // Остальные GET запросы
+                        .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(oncePerRequestFilterImpl, UsernamePasswordAuthenticationFilter.class);
 

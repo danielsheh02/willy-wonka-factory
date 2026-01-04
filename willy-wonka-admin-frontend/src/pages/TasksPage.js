@@ -1,15 +1,19 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert, ToggleButton, ToggleButtonGroup, IconButton } from "@mui/material";
+import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert, ToggleButton, ToggleButtonGroup, IconButton, Chip } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import PeopleIcon from "@mui/icons-material/People";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
+import AssignmentReturnIcon from '@mui/icons-material/AssignmentReturn';
 import api, { API_URL } from "../api";
 import { useAuth } from "../auth/AuthProvider";
+import { usePermissions } from "../hooks/usePermissions";
 
 export default function TasksPage() {
   const { user } = useAuth();
+  const permissions = usePermissions();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -73,12 +77,13 @@ export default function TasksPage() {
   const handleClose = () => { setOpen(false); setSelectedTask(null); };
 
   const handleSave = async () => {
-    // Валидация обязательных полей
-    const userId = selectedTask.userId || selectedTask.user?.id;
-    if (!selectedTask.name || !selectedTask.status || !userId) {
+    // Валидация обязательных полей (userId теперь необязателен)
+    if (!selectedTask.name || !selectedTask.status) {
       setNotification("Заполните все обязательные поля!");
       return;
     }
+    
+    const userId = selectedTask.userId || selectedTask.user?.id;
     
     // Подготовка данных для отправки
     const dataToSend = {
@@ -107,6 +112,28 @@ export default function TasksPage() {
     await api.delete(`${API_URL}/api/tasks/${id}`);
     fetchTasks();
     setNotification("Задача удалена");
+  };
+
+  const handleTakeTask = async (taskId) => {
+    try {
+      await api.post(`${API_URL}/api/tasks/${taskId}/assign-to-me?userId=${user.id}`);
+      fetchTasks();
+      setNotification("Задача взята в работу");
+    } catch (error) {
+      console.error("Ошибка при взятии задачи:", error);
+      setNotification(error.response?.data || "Ошибка при взятии задачи");
+    }
+  };
+
+  const handleUnassignTask = async (taskId) => {
+    try {
+      await api.post(`${API_URL}/api/tasks/${taskId}/unassign?userId=${user.id}`);
+      fetchTasks();
+      setNotification("Вы отказались от задачи");
+    } catch (error) {
+      console.error("Ошибка при отказе от задачи:", error);
+      setNotification(error.response?.data || "Ошибка при отказе от задачи");
+    }
   };
 
   const handleEditCallback = useCallback((task) => {
@@ -170,7 +197,28 @@ export default function TasksPage() {
     { 
       field: "status", 
       headerName: "Статус", 
-      width: 140
+      width: 160,
+      renderCell: (params) => {
+        const statusColors = {
+          'NOT_ASSIGNED': 'default',
+          'IN_PROGRESS': 'primary',
+          'COMPLETED': 'success'
+        };
+        
+        const statusLabels = {
+          'NOT_ASSIGNED': 'Не назначена',
+          'IN_PROGRESS': 'В работе',
+          'COMPLETED': 'Завершена'
+        };
+        
+        return (
+          <Chip 
+            label={statusLabels[params.value] || params.value}
+            color={statusColors[params.value] || 'default'}
+            size="small"
+          />
+        );
+      }
     },
     { 
       field: "userId", 
@@ -198,36 +246,73 @@ export default function TasksPage() {
     {
       field: "actions",
       headerName: "Действия",
-      width: 120,
+      width: 180,
       sortable: false,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton 
-            size="small" 
-            color="primary"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditCallback(params.row);
-            }}
-            title="Редактировать"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton 
-            size="small" 
-            color="error"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteCallback(params.row);
-            }}
-            title="Удалить"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      )
+      renderCell: (params) => {
+        const canEdit = permissions.canEditTask(params.row.user?.id);
+        const canDelete = permissions.canDeleteTask;
+        const isUnassigned = !params.row.user;
+        const isMyTask = params.row.user?.id === user?.id;
+        
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {isUnassigned && (
+              <IconButton 
+                size="small" 
+                color="success"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTakeTask(params.row.id);
+                }}
+                title="Взять задачу"
+              >
+                <AssignmentIndIcon fontSize="small" />
+              </IconButton>
+            )}
+            {isMyTask && (
+              <IconButton 
+                size="small" 
+                color="warning"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUnassignTask(params.row.id);
+                }}
+                title="Отказаться от задачи"
+              >
+                <AssignmentReturnIcon fontSize="small" />
+              </IconButton>
+            )}
+            {canEdit && (
+              <IconButton 
+                size="small" 
+                color="primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditCallback(params.row);
+                }}
+                title="Редактировать"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
+            {canDelete && (
+              <IconButton 
+                size="small" 
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteCallback(params.row);
+                }}
+                title="Удалить"
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+        );
+      }
     }
-  ], [handleEditCallback, handleDeleteCallback]);
+  ], [handleEditCallback, handleDeleteCallback, permissions]);
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -249,15 +334,17 @@ export default function TasksPage() {
               Мои
             </ToggleButton>
           </ToggleButtonGroup>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            size="small"
-            onClick={() => handleOpen()}
-            sx={{ textTransform: 'none' }}
-          >
-            + Создать
-          </Button>
+          {permissions.canCreateTask && (
+            <Button 
+              variant="contained" 
+              color="primary" 
+              size="small"
+              onClick={() => handleOpen()}
+              sx={{ textTransform: 'none' }}
+            >
+              + Создать
+            </Button>
+          )}
         </Box>
       </Box>
       {loading ? <CircularProgress /> : (
@@ -306,27 +393,41 @@ export default function TasksPage() {
             value={selectedTask?.description || ""} 
             onChange={e => setSelectedTask(t => ({ ...t, description: e.target.value }))} 
           />
-          <FormControl margin="dense" fullWidth required>
-            <InputLabel>Рабочий</InputLabel>
-            <Select 
-              value={selectedTask?.userId || selectedTask?.user?.id || ""} 
-              onChange={e => setSelectedTask(t => ({ ...t, userId: e.target.value }))} 
-              label="Рабочий"
-              MenuProps={{
-                PaperProps: {
-                  style: {
-                    maxHeight: 300,
-                  },
-                },
-              }}
-            >
-              {users.map(u => (
-                <MenuItem value={u.id} key={u.id}>
-                  {u.username} (ID: {u.id}) - {getRoleLabel(u.role)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Рабочий (необязательно)
+            </Typography>
+            {selectedTask?.userId || selectedTask?.user?.id ? (
+              <Chip
+                label={users.find(u => u.id === (selectedTask?.userId || selectedTask?.user?.id))?.username || "Неизвестен"}
+                onDelete={() => setSelectedTask(t => ({ ...t, userId: null, user: null }))}
+                color="primary"
+                sx={{ mt: 1 }}
+              />
+            ) : (
+              <FormControl fullWidth size="small">
+                <InputLabel>Выбрать рабочего</InputLabel>
+                <Select 
+                  value="" 
+                  onChange={e => setSelectedTask(t => ({ ...t, userId: e.target.value }))} 
+                  label="Выбрать рабочего"
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                      },
+                    },
+                  }}
+                >
+                  {users.map(u => (
+                    <MenuItem value={u.id} key={u.id}>
+                      {u.username} (ID: {u.id}) - {getRoleLabel(u.role)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
           <FormControl margin="dense" fullWidth required>
             <InputLabel>Статус</InputLabel>
             <Select 

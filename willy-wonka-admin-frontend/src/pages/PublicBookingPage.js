@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Typography, TextField, Button, Card, CardContent,
   Stepper, Step, StepLabel, Alert, CircularProgress,
-  List, ListItem, ListItemButton, ListItemText, Divider, Chip
+  List, ListItem, ListItemButton, ListItemText, Divider, Chip,
+  Snackbar
 } from "@mui/material";
 import api, { API_URL } from "../api";
 
@@ -39,6 +40,7 @@ export default function PublicBookingPage() {
 
   const [bookingResult, setBookingResult] = useState(null);
   const [error, setError] = useState("");
+  const [notification, setNotification] = useState("");
 
   useEffect(() => {
     if (activeStep === 1) {
@@ -76,9 +78,37 @@ export default function PublicBookingPage() {
 
       if (data.valid) {
         setTicketValid(data.ticket);
-        setActiveStep(1);
+        
+        // Проверяем статус билета
+        if (data.ticket.status === 'BOOKED') {
+          // Билет уже забронирован - показываем шаг управления бронированием
+          setActiveStep(4); // Новый шаг для управления существующим бронированием
+        } else if (data.ticket.status === 'ACTIVE') {
+          // Билет активен - можно записаться
+          setActiveStep(1);
+        } else {
+          // USED, EXPIRED, CANCELLED
+          setValidationError("Этот билет больше не действителен. Статус: " + data.ticket.status);
+        }
       } else {
-        setValidationError(data.message || "Билет недействителен");
+        // Билет не найден или невалиден
+        if (!data.ticket) {
+          setValidationError("Билет с таким номером не найден");
+        } else {
+          // Билет найден, но невалиден (USED, EXPIRED, CANCELLED или истек срок)
+          const status = data.ticket.status;
+          if (status === 'USED') {
+            setValidationError("Этот билет уже был использован");
+          } else if (status === 'EXPIRED') {
+            setValidationError("Срок действия этого билета истек");
+          } else if (status === 'CANCELLED') {
+            setValidationError("Этот билет был отменен");
+          } else if (data.ticket.expiresAt && new Date(data.ticket.expiresAt) < new Date()) {
+            setValidationError("Срок действия этого билета истек");
+          } else {
+            setValidationError("Билет недействителен. Статус: " + status);
+          }
+        }
       }
     } catch (err) {
       console.error("Ошибка проверки билета:", err);
@@ -108,6 +138,12 @@ export default function PublicBookingPage() {
     setError("");
 
     try {
+      // Если билет был BOOKED, сначала отменяем старое бронирование
+      if (ticketValid && ticketValid.status === 'BOOKED') {
+        await api.delete(`${API_URL}/api/tickets/${ticketNumber.trim().toUpperCase()}/cancel`);
+      }
+
+      // Создаем новое бронирование
       const { data } = await api.post(`${API_URL}/api/tickets/book`, {
         ticketNumber: ticketNumber.trim().toUpperCase(),
         excursionId: selectedExcursion.id,
@@ -125,6 +161,54 @@ export default function PublicBookingPage() {
     setLoading(false);
   };
 
+  const handleCancelBooking = async () => {
+    if (!ticketNumber) {
+      setError("Номер билета не найден");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.delete(`${API_URL}/api/tickets/${ticketNumber.trim().toUpperCase()}/cancel`);
+      
+      // Показываем уведомление
+      setNotification("Бронирование успешно отменено");
+      
+      // Сбрасываем форму, но не очищаем notification
+      setActiveStep(0);
+      setTicketNumber("");
+      setTicketValid(null);
+      setValidationError("");
+      setSelectedExcursion(null);
+      setHolderName("");
+      setHolderEmail("");
+      setBookingResult(null);
+      setError("");
+      // notification остается и закроется сам через 4 секунды
+    } catch (err) {
+      console.error("Ошибка отмены бронирования:", err);
+      setError(err.response?.data?.error || "Ошибка при отмене бронирования");
+    }
+
+    setLoading(false);
+  };
+
+  const handleRebookToAnotherExcursion = () => {
+    // Заполняем данные владельца из текущего билета, если они есть
+    if (ticketValid) {
+      if (ticketValid.holderName && !holderName) {
+        setHolderName(ticketValid.holderName);
+      }
+      if (ticketValid.holderEmail && !holderEmail) {
+        setHolderEmail(ticketValid.holderEmail);
+      }
+    }
+    // Переходим к выбору новой экскурсии (отмена произойдет при новом бронировании)
+    setActiveStep(1);
+  };
+
   const handleReset = () => {
     setActiveStep(0);
     setTicketNumber("");
@@ -135,6 +219,7 @@ export default function PublicBookingPage() {
     setHolderEmail("");
     setBookingResult(null);
     setError("");
+    setNotification("");
   };
 
   return (
@@ -361,17 +446,125 @@ export default function PublicBookingPage() {
               <Typography variant="body2">{bookingResult.holderEmail}</Typography>
             </Box>
 
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-              Подтверждение отправлено на указанный email. Сохраните номер билета для входа на экскурсию.
-            </Typography>
-
             <Button variant="outlined" fullWidth onClick={handleReset}>
               Забронировать еще один билет
             </Button>
           </CardContent>
         </Card>
       )}
+
+      {/* Управление существующим бронированием */}
+      {activeStep === 4 && ticketValid && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom align="center" color="warning.main">
+              ⚠️ У вас уже есть бронирование
+            </Typography>
+
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              Этот билет уже забронирован на экскурсию
+            </Alert>
+
+            {ticketValid.excursionName && (
+              <>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Текущая экскурсия:
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {ticketValid.excursionName}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Дата и время:
+                  </Typography>
+                  <Typography variant="body1">
+                    {ticketValid.excursionStartTime 
+                      ? new Date(ticketValid.excursionStartTime).toLocaleString("ru-RU")
+                      : "-"}
+                  </Typography>
+                </Box>
+
+                {ticketValid.holderName && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Владелец:
+                    </Typography>
+                    <Typography variant="body1">{ticketValid.holderName}</Typography>
+                    {ticketValid.holderEmail && (
+                      <Typography variant="body2">{ticketValid.holderEmail}</Typography>
+                    )}
+                  </Box>
+                )}
+
+                {/* Проверка, не прошла ли экскурсия */}
+                {ticketValid.excursionStartTime && 
+                 new Date(ticketValid.excursionStartTime) <= new Date() ? (
+                  <Alert severity="error" sx={{ mb: 3 }}>
+                    Экскурсия уже прошла. Перезапись невозможна.
+                  </Alert>
+                ) : (
+                  <>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Что вы хотите сделать?
+                    </Typography>
+
+                    {error && (
+                      <Alert severity="error" sx={{ mb: 2 }}>
+                        {error}
+                      </Alert>
+                    )}
+
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        fullWidth
+                        onClick={handleRebookToAnotherExcursion}
+                        disabled={loading}
+                      >
+                        Перезаписаться на другую экскурсию
+                      </Button>
+
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        fullWidth
+                        onClick={handleCancelBooking}
+                        disabled={loading}
+                      >
+                        {loading ? <CircularProgress size={24} /> : "Отменить бронирование"}
+                      </Button>
+
+                      <Button
+                        variant="text"
+                        fullWidth
+                        onClick={handleReset}
+                      >
+                        Назад к вводу билета
+                      </Button>
+                    </Box>
+                  </>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Уведомления */}
+      <Snackbar 
+        open={!!notification} 
+        autoHideDuration={4000} 
+        onClose={() => setNotification("")}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="success" onClose={() => setNotification("")}>
+          {notification}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
-

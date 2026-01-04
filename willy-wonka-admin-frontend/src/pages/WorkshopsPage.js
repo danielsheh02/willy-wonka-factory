@@ -4,8 +4,10 @@ import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActi
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import api, { API_URL } from "../api";
+import { usePermissions } from "../hooks/usePermissions";
 
 export default function WorkshopsPage() {
+  const permissions = usePermissions();
   const [list, setList] = useState([]);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -177,46 +179,52 @@ export default function WorkshopsPage() {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton 
-            size="small" 
-            color="primary"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditCallback(params.row);
-            }}
-            title="Редактировать"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton 
-            size="small" 
-            color="error"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteCallback(params.row);
-            }}
-            title="Удалить"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {permissions.canEditWorkshop && (
+            <IconButton 
+              size="small" 
+              color="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditCallback(params.row);
+              }}
+              title="Редактировать"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {permissions.canDeleteWorkshop && (
+            <IconButton 
+              size="small" 
+              color="error"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteCallback(params.row);
+              }}
+              title="Удалить"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       )
     }
-  ], [handleEditCallback, handleDeleteCallback]);
+  ], [handleEditCallback, handleDeleteCallback, permissions]);
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Цеха</Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="small"
-          onClick={() => handleOpen()}
-          sx={{ textTransform: 'none' }}
-        >
-          + Добавить
-        </Button>
+        {permissions.canCreateWorkshop && (
+          <Button 
+            variant="contained" 
+            color="primary" 
+            size="small"
+            onClick={() => handleOpen()}
+            sx={{ textTransform: 'none' }}
+          >
+            + Добавить
+          </Button>
+        )}
       </Box>
       <Box sx={{ flexGrow: 1, minHeight: 0 }}>
         <DataGrid 

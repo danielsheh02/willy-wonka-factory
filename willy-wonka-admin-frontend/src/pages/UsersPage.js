@@ -4,6 +4,7 @@ import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActi
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import api, { API_URL } from "../api";
+import { usePermissions } from "../hooks/usePermissions";
 
 const ROLES = [
   { value: "WORKER", label: "Рабочий" },
@@ -14,6 +15,7 @@ const ROLES = [
 ];
 
 export default function UsersPage() {
+  const permissions = usePermissions();
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -130,45 +132,51 @@ export default function UsersPage() {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton 
-            size="small" 
-            color="primary"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditCallback(params.row);
-            }}
-            title="Редактировать"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton 
-            size="small" 
-            color="error"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteCallback(params.row);
-            }}
-            title="Удалить"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {permissions.canEditUser && (
+            <IconButton 
+              size="small" 
+              color="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditCallback(params.row);
+              }}
+              title="Редактировать"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {permissions.canDeleteUser && (
+            <IconButton 
+              size="small" 
+              color="error"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteCallback(params.row);
+              }}
+              title="Удалить"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       )
     }
-  ], [handleEditCallback, handleDeleteCallback]);
+  ], [handleEditCallback, handleDeleteCallback, permissions]);
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Сотрудники</Typography>
-        <Button 
-          variant="contained" 
-          size="small"
-          onClick={() => handleOpen()}
-          sx={{ textTransform: 'none' }}
-        >
-          + Создать
-        </Button>
+        {permissions.canCreateUser && (
+          <Button 
+            variant="contained" 
+            size="small"
+            onClick={() => handleOpen()}
+            sx={{ textTransform: 'none' }}
+          >
+            + Создать
+          </Button>
+        )}
       </Box>
       <Box sx={{ flexGrow: 1, minHeight: 0 }}>
         <DataGrid 
