@@ -33,6 +33,9 @@ public class ReportService {
     private UserRepository userRepository;
 
     public ReportStatisticsDTO generateReport(LocalDateTime startDate, LocalDateTime endDate) {
+        if (!startDate.isBefore(endDate)) {
+            throw new IllegalArgumentException("startDate must be strictly before endDate");
+        }
         ReportStatisticsDTO report = new ReportStatisticsDTO();
         
         // Статистика по задачам

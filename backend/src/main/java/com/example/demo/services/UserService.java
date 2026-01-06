@@ -77,6 +77,9 @@ public class UserService {
     }
 
     public Optional<UserResponseDTO> createUser(UserRequestDTO dto) {
+        if (dto.getUsername() == null || dto.getUsername().isEmpty()) {
+            return Optional.empty();
+        }
         if (userRepository.existsByUsername(dto.getUsername())) {
             throw new UsernameAlreadyExistsException("Username exist");
         }

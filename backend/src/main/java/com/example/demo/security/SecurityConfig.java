@@ -96,6 +96,8 @@ public class SecurityConfig {
                         // Задачи - все могут читать, PUT для всех (проверка владельца на уровне сервиса)
                         .requestMatchers(HttpMethod.POST, "/api/tasks/distribute").hasAnyRole("FOREMAN", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/tasks/unassigned").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/tasks/*/assign-to-me").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
+                        .requestMatchers(HttpMethod.POST, "/api/tasks/*/unassign").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
                         .requestMatchers(HttpMethod.POST, "/api/tasks/**").hasAnyRole("FOREMAN", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasAnyRole("FOREMAN", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/tasks/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")

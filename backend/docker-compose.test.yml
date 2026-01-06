@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  test-postgres:
+    image: postgres
+    container_name: willy-wonka-test-db
+    ports:
+      - "55432:5432"
+    environment:
+      POSTGRES_DB: willy_wonka_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    volumes:
+      - ./pg-data-test-db:/var/lib/postgresql/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d willy_wonka_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  test-network:
+    driver: bridge
