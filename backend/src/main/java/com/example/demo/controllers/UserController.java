@@ -4,6 +4,7 @@ import com.example.demo.dto.request.UserRequestDTO;
 import com.example.demo.dto.response.UserResponseDTO;
 import com.example.demo.services.UserService;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -68,5 +69,14 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Получить количество пользователей
+     */
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Long>> getUsersCount() {
+        long count = userService.countUsers();
+        return ResponseEntity.ok(Map.of("count", count));
     }
 }

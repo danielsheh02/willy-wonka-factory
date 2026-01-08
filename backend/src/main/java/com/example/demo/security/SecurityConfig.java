@@ -62,7 +62,8 @@ public class SecurityConfig {
                                 // Публичные endpoints для золотых билетов и бронирования
                                 "/api/tickets/validate/**",
                                 "/api/tickets/book",
-                                "/api/tickets/*/cancel")
+                                "/api/tickets/*/cancel",
+                                "/actuator/**")
                         .permitAll()
                         
                         // Экскурсии - просмотр для всех, управление только для ADMIN и GUIDE

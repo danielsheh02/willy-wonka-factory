@@ -73,4 +73,13 @@ public class EquipmentController {
         }
         return ResponseEntity.ok(statusNames);
     }
+
+    /**
+     * Получить количество оборудования
+     */
+    @GetMapping("/count")
+    public ResponseEntity<java.util.Map<String, Long>> getEquipmentsCount() {
+        long count = equipmentService.countEquipment();
+        return ResponseEntity.ok(java.util.Map.of("count", count));
+    }
 }

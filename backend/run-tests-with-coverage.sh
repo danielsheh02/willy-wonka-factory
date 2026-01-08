@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Скрипт для запуска тестов с детальным отчетом о покрытии кода
-# Использование: ./run-tests-with-coverage.sh
-
 set -e
 
 echo "================================================================"
@@ -10,34 +7,19 @@ echo "Willy Wonka Factory - Тесты с отчетом о покрытии к�
 echo "================================================================"
 echo ""
 
-# Цвета для вывода
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Проверка наличия Docker
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}Ошибка: Docker не установлен${NC}"
-    exit 1
-fi
 
-# Проверка наличия Docker Compose
-if ! command -v docker-compose &> /dev/null; then
-    echo -e "${RED}Ошибка: Docker Compose не установлен${NC}"
-    exit 1
-fi
-
-# Остановка старых контейнеров
 echo -e "${YELLOW}[1/6] Очистка старых тестовых контейнеров...${NC}"
 docker-compose -f docker-compose.test.yml down -v 2>/dev/null || true
 
-# Запуск тестовой БД
 echo -e "${YELLOW}[2/6] Запуск тестовой базы данных...${NC}"
 docker-compose -f docker-compose.test.yml up -d
 
-# Ожидание готовности БД
 echo -e "${YELLOW}[3/6] Ожидание готовности базы данных...${NC}"
 sleep 5
 
@@ -60,7 +42,6 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     exit 1
 fi
 
-# Запуск тестов
 echo ""
 echo -e "${YELLOW}[4/6] Запуск тестов...${NC}"
 echo "================================================================"
@@ -75,23 +56,19 @@ else
     exit 1
 fi
 
-# Генерация отчета JaCoCo
 echo ""
 echo -e "${YELLOW}[5/6] Генерация отчета о покрытии кода (JaCoCo)...${NC}"
 ./gradlew jacocoTestReport
 
-# Проверка покрытия
 echo ""
 echo -e "${YELLOW}[6/6] Проверка минимального покрытия кода...${NC}"
 ./gradlew jacocoTestCoverageVerification || true
 
-# Вывод статистики покрытия
 echo ""
 echo -e "${BLUE}================================================================"
 echo "                  РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ"
 echo "================================================================${NC}"
 
-# Подсчет количества тестов
 if [ -f "build/test-results/test/TEST-com.example.demo.controllers.AuthControllerIntegrationTest.xml" ]; then
     TOTAL_TESTS=$(find build/test-results/test -name "*.xml" -exec grep -o 'tests="[0-9]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
     FAILED_TESTS=$(find build/test-results/test -name "*.xml" -exec grep -o 'failures="[0-9]*"' {} \; | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
@@ -110,7 +87,6 @@ echo "  → HTML отчет о тестах:    build/reports/tests/test/index.h
 echo "  → HTML отчет о покрытии:  build/reports/jacoco/test/html/index.html"
 echo "  → XML отчет о покрытии:   build/reports/jacoco/test/jacocoTestReport.xml"
 
-# Открыть отчет в браузере (опционально)
 if command -v xdg-open &> /dev/null; then
     echo ""
     read -p "Открыть отчет о покрытии в браузере? (y/n) " -n 1 -r
@@ -121,7 +97,6 @@ if command -v xdg-open &> /dev/null; then
     fi
 fi
 
-# Очистка
 echo ""
 echo -e "${YELLOW}Остановка тестовой базы данных...${NC}"
 docker-compose -f docker-compose.test.yml down -v

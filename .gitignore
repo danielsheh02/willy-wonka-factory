@@ -10,3 +10,5 @@ backend/pg-data/
 
 # Node.js
 willy-wonka-admin-frontend/node_modules/
+backend/performance-testing/results/
+backend/performance-testing/tokens/

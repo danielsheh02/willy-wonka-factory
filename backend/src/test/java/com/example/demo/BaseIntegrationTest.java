@@ -72,8 +72,7 @@ public abstract class BaseIntegrationTest {
                     roleTokens.put(role, token);
                 }
             }
-            
-            // Если не хватает пользователей, создаем недостающих
+
             if (roleUsers.size() < 5) {
                 createTestUsers();
                 generateTokensForRoles();

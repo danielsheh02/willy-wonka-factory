@@ -175,4 +175,13 @@ public class TaskController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    /**
+     * Получить количество задач
+     */
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Long>> getTasksCount() {
+        long count = taskService.countTasks();
+        return ResponseEntity.ok(Map.of("count", count));
+    }
 }

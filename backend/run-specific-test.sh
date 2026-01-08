@@ -1,12 +1,7 @@
 #!/bin/bash
 
-# Скрипт для запуска конкретного тестового класса
-# Использование: ./run-specific-test.sh <TestClassName>
-# Пример: ./run-specific-test.sh AuthControllerIntegrationTest
-
 set -e
 
-# Проверка аргументов
 if [ $# -eq 0 ]; then
     echo "Использование: $0 <TestClassName>"
     echo ""
@@ -27,7 +22,6 @@ fi
 
 TEST_CLASS=$1
 
-# Цвета
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
@@ -38,14 +32,12 @@ echo "Запуск теста: $TEST_CLASS"
 echo "=================================================="
 echo ""
 
-# Запуск тестовой БД
 echo -e "${YELLOW}Запуск тестовой базы данных...${NC}"
 docker-compose -f docker-compose.test.yml up -d
 
 echo "Ожидание готовности БД..."
 sleep 15
 
-# Запуск конкретного теста
 echo ""
 echo -e "${YELLOW}Запуск теста $TEST_CLASS...${NC}"
 echo ""
@@ -60,7 +52,6 @@ else
     exit 1
 fi
 
-# Очистка
 echo ""
 echo -e "${YELLOW}Остановка тестовой базы данных...${NC}"
 docker-compose -f docker-compose.test.yml down -v

@@ -117,4 +117,8 @@ public class EquipmentService {
     public void deleteEquipment(Long id) {
         equipmentRepository.deleteById(id);
     }
+
+    public long countEquipment() {
+        return equipmentRepository.count();
+    }
 }
