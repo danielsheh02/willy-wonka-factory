@@ -26,7 +26,6 @@ public class DataIntegrityTest extends BaseDatabaseTest {
 
         assertNotNull(user.getCreatedAt(), "created_at должен быть заполнен автоматически");
 
-        // Проверяем через SQL
         String createdAtFromDb = jdbcTemplate.queryForObject(
             "SELECT created_at::text FROM users WHERE id = ?",
             String.class, user.getId()
@@ -49,7 +48,6 @@ public class DataIntegrityTest extends BaseDatabaseTest {
     @DisplayName("GoldenTicket.excursion_id может быть NULL (до бронирования)")
     public void testTicketExcursionCanBeNull() {
         GoldenTicket ticket = new GoldenTicket();
-        // Генерируем номер не длиннее 10 символов
         ticket.setTicketNumber(String.format("N%09d", System.currentTimeMillis() % 1000000000L));
         ticket.setStatus(TicketStatus.ACTIVE);
         ticket.setExcursion(null);
@@ -58,7 +56,6 @@ public class DataIntegrityTest extends BaseDatabaseTest {
             goldenTicketRepository.saveAndFlush(ticket);
         }, "excursion_id может быть NULL для активного билета");
 
-        // Проверяем через SQL
         Integer excursionId = jdbcTemplate.queryForObject(
             "SELECT excursion_id FROM golden_tickets WHERE ticket_number = ?",
             Integer.class, ticket.getTicketNumber()
@@ -102,7 +99,6 @@ public class DataIntegrityTest extends BaseDatabaseTest {
     @Test
     @DisplayName("Excursion.guide должен быть пользователем с ролью GUIDE")
     public void testExcursionGuideRole() {
-        // Создаем пользователя с ролью GUIDE
         User guide = new User();
         guide.setUsername("valid_guide_" + System.currentTimeMillis());
         guide.setPassword("password");
@@ -120,7 +116,6 @@ public class DataIntegrityTest extends BaseDatabaseTest {
             excursionRepository.saveAndFlush(excursion);
         }, "Экскурсия с GUIDE должна создаваться успешно");
 
-        // Проверяем роль через SQL
         String role = jdbcTemplate.queryForObject(
             "SELECT u.role FROM excursions e JOIN users u ON e.guide_id = u.id WHERE e.id = ?",
             String.class, excursion.getId()
@@ -147,11 +142,9 @@ public class DataIntegrityTest extends BaseDatabaseTest {
 
         Long excursionId = excursion.getId();
 
-        // Экскурсия без маршрутов
         assertEquals(0, countRows("SELECT COUNT(*) FROM excursion_routes WHERE excursion_id = ?", excursionId),
             "Экскурсия может существовать без маршрутов");
 
-        // Добавляем несколько маршрутов
         Workshop workshop1 = new Workshop();
         workshop1.setName("Workshop 1");
         workshop1 = workshopRepository.save(workshop1);
@@ -192,7 +185,6 @@ public class DataIntegrityTest extends BaseDatabaseTest {
 
         assertNotNull(notification.getUser(), "Notification должен быть связан с User");
 
-        // Проверяем через SQL
         Integer userIdFromDb = jdbcTemplate.queryForObject(
             "SELECT user_id FROM notifications WHERE id = ?",
             Integer.class, notification.getId()
@@ -203,17 +195,13 @@ public class DataIntegrityTest extends BaseDatabaseTest {
     @Test
     @DisplayName("Проверка дефолтных значений при создании сущностей")
     public void testDefaultValues() {
-        // GoldenTicket.status по умолчанию ACTIVE
         GoldenTicket ticket = new GoldenTicket();
-        // Генерируем номер не длиннее 10 символов
         ticket.setTicketNumber(String.format("D%09d", System.currentTimeMillis() % 1000000000L));
-        // Не устанавливаем status явно
         ticket = goldenTicketRepository.save(ticket);
 
         assertEquals(TicketStatus.ACTIVE, ticket.getStatus(),
             "Status должен быть ACTIVE по умолчанию");
 
-        // User.is_banned по умолчанию false
         User user = new User();
         user.setUsername("default_banned_" + System.currentTimeMillis());
         user.setPassword("password");

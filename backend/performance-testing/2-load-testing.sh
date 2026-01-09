@@ -218,7 +218,7 @@ POST_DATA_TASK='{"name":"Load Test Task Concurrent","description":"Created durin
 POST_DATA_EQUIPMENT="{\"name\":\"Load Test Equip Concurrent\",\"description\":\"Created during concurrent testing\",\"model\":\"Model-C-2026\",\"status\":\"WORKING\",\"health\":95,\"temperature\":24,\"workshopId\":${WORKSHOP_ID}}"
 
 run_load_test 100 10 "/api/tasks" "POST" "$FOREMAN_TOKEN" "$POST_DATA_TASK" "Этап 4.1 - POST tasks (100 users)"
-run_load_test 50 10 "/api/equipments" "POST" "$FOREMAN_TOKEN" "$POST_DATA_EQUIPMENT" "Этап 4.2 - POST equipments (50 users)"
+run_load_test 100 10 "/api/equipments" "POST" "$FOREMAN_TOKEN" "$POST_DATA_EQUIPMENT" "Этап 4.2 - POST equipments (50 users)"
 
 #############################################################
 # Анализ и выводы
