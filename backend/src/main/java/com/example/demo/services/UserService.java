@@ -5,9 +5,12 @@ import com.example.demo.dto.response.UserResponseDTO;
 import com.example.demo.dto.short_db.WorkshopShortDTO;
 import com.example.demo.exceptions.UsernameAlreadyExistsException;
 import com.example.demo.models.Role;
+import com.example.demo.models.Task;
+import com.example.demo.models.TaskStatus;
 import com.example.demo.models.User;
 import com.example.demo.models.Workshop;
 import com.example.demo.models.WorkshopToUser;
+import com.example.demo.repositories.TaskRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.WorkshopRepository;
 
@@ -18,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,11 +30,14 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final WorkshopRepository workshopRepository;
+    private final TaskRepository taskRepository;
     private final PasswordEncoder encoder;
 
-    public UserService(UserRepository userRepository, WorkshopRepository workshopRepository, PasswordEncoder encoder) {
+    public UserService(UserRepository userRepository, WorkshopRepository workshopRepository, 
+                      TaskRepository taskRepository, PasswordEncoder encoder) {
         this.userRepository = userRepository;
         this.workshopRepository = workshopRepository;
+        this.taskRepository = taskRepository;
         this.encoder = encoder;
     }
 
@@ -162,8 +169,36 @@ public class UserService {
         return Optional.of(toUserDTO(saved));
     }
 
+    /**
+     * Удаление пользователя с обработкой связанных задач
+     * Все задачи в статусе IN_PROGRESS переводятся в NOT_ASSIGNED
+     */
     public void deleteUser(Long id) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) {
+            return; // Пользователь не найден
+        }
+        
+        User user = userOpt.get();
+        
+        // Находим все задачи пользователя в статусе IN_PROGRESS
+        List<Task> inProgressTasks = taskRepository.findByUserAndStatus(user, TaskStatus.IN_PROGRESS);
+        
+        // Переводим их в статус NOT_ASSIGNED
+        for (Task task : inProgressTasks) {
+            task.setStatus(TaskStatus.NOT_ASSIGNED);
+            task.setUser(null); // Обнуляем связь с пользователем
+        }
+        
+        // Сохраняем изменения задач
+        if (!inProgressTasks.isEmpty()) {
+            taskRepository.saveAll(inProgressTasks);
+            taskRepository.flush(); // Применяем изменения немедленно
+        }
+        
+        // Удаляем пользователя
         userRepository.deleteById(id);
+        userRepository.flush(); // Применяем удаление немедленно
     }
 
     public Boolean existsByUsername(String username) {

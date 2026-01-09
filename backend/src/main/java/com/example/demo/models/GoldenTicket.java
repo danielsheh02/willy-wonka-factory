@@ -21,7 +21,8 @@ public class GoldenTicket {
     private TicketStatus status;
 
     @ManyToOne
-    @JoinColumn(name = "excursion_id")
+    @JoinColumn(name = "excursion_id", nullable = true)
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.SET_NULL)
     @JsonIgnoreProperties({"routes", "guide"})
     private Excursion excursion; // Экскурсия, на которую забронирован билет (nullable)
 

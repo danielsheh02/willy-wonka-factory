@@ -15,6 +15,7 @@ public class ExcursionRoute {
 
     @ManyToOne
     @JoinColumn(name = "excursion_id", nullable = false)
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     @JsonIgnore
     private Excursion excursion;
 

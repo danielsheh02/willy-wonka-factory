@@ -6,6 +6,7 @@ import com.example.demo.dto.response.ExcursionRouteDTO;
 import com.example.demo.models.*;
 import com.example.demo.repositories.ExcursionRepository;
 import com.example.demo.repositories.ExcursionRouteRepository;
+import com.example.demo.repositories.GoldenTicketRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.WorkshopRepository;
 import com.example.demo.utils.DateTimeUtils;
@@ -19,6 +20,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class ExcursionService {
+
+    @Autowired
+    private GoldenTicketRepository ticketRepository;
 
     @Autowired
     private ExcursionRepository excursionRepository;
@@ -215,6 +219,18 @@ public class ExcursionService {
 
     @Transactional
     public void deleteExcursion(Long id) {
+
+        for (GoldenTicket ticket : ticketRepository.findByExcursionId(id)) {
+            ticket.setExcursion(null);
+            ticket.setStatus(TicketStatus.ACTIVE);
+            ticket.setBookedAt(null);
+            ticket.setUsedAt(null);
+            ticket.setHolderName(null);
+            ticket.setHolderEmail(null);
+            ticket.setHolderPhone(null);
+            ticketRepository.save(ticket);
+        }
+
         excursionRepository.deleteById(id);
     }
 

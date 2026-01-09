@@ -35,7 +35,8 @@ public class Equipment {
 
     @ManyToOne
     @JsonIgnore
-    @JoinColumn(name = "workshop_id")
+    @JoinColumn(name = "workshop_id", nullable = false)
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private Workshop workshop;
 
     public Equipment() {
