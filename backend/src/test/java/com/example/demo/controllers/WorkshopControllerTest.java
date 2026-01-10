@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.dto.request.WorkshopRequestDTO;
 import com.example.demo.models.Role;
 import com.example.demo.models.Workshop;
@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для WorkshopController")
-public class WorkshopControllerIntegrationTest extends BaseIntegrationTest {
+public class WorkshopControllerTest extends BaseTest {
 
     @Autowired
     private WorkshopRepository workshopRepository;

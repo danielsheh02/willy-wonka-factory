@@ -358,13 +358,13 @@ export default function TasksPage() {
               pagination: {
                 paginationModel: {
                   page: 0,
-                  pageSize: 10,
+                  pageSize: 25,
                 },
               },
             }}
             rows={filteredTasks} 
             columns={columns} 
-            pageSize={10}
+            pageSize={25}
             rowsPerPageOptions={[10, 25, 50]}
             getRowHeight={() => 'auto'}
             sx={{ 

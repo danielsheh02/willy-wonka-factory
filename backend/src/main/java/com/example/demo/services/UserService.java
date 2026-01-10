@@ -176,29 +176,26 @@ public class UserService {
     public void deleteUser(Long id) {
         Optional<User> userOpt = userRepository.findById(id);
         if (userOpt.isEmpty()) {
-            return; // Пользователь не найден
+            return;
         }
         
         User user = userOpt.get();
         
-        // Находим все задачи пользователя в статусе IN_PROGRESS
         List<Task> inProgressTasks = taskRepository.findByUserAndStatus(user, TaskStatus.IN_PROGRESS);
         
-        // Переводим их в статус NOT_ASSIGNED
         for (Task task : inProgressTasks) {
             task.setStatus(TaskStatus.NOT_ASSIGNED);
-            task.setUser(null); // Обнуляем связь с пользователем
+            task.setUser(null);
         }
         
-        // Сохраняем изменения задач
+
         if (!inProgressTasks.isEmpty()) {
             taskRepository.saveAll(inProgressTasks);
-            taskRepository.flush(); // Применяем изменения немедленно
+            taskRepository.flush();
         }
         
-        // Удаляем пользователя
         userRepository.deleteById(id);
-        userRepository.flush(); // Применяем удаление немедленно
+        userRepository.flush();
     }
 
     public Boolean existsByUsername(String username) {

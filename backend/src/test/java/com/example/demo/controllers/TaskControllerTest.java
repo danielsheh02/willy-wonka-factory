@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.dto.request.TaskFilterRequestDTO;
 import com.example.demo.dto.request.TaskRequestDTO;
 import com.example.demo.models.Role;
@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для TaskController")
-public class TaskControllerIntegrationTest extends BaseIntegrationTest {
+public class TaskControllerTest extends BaseTest {
 
     @Autowired
     private TaskRepository taskRepository;
@@ -92,7 +92,6 @@ public class TaskControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Получение всех задач")
     public void testGetAllTasks() throws Exception {
-        // Создаем тестовую задачу
         Task task = new Task();
         task.setName("Тестовая задача");
         task.setDescription("Описание");
@@ -187,7 +186,6 @@ public class TaskControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Получение задач с пагинацией")
     public void testGetTasksPaged() throws Exception {
-        // Создаем несколько задач
         for (int i = 0; i < 15; i++) {
             Task task = new Task();
             task.setName("Задача " + i);
@@ -250,7 +248,6 @@ public class TaskControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Получение нераспределенных задач")
     public void testGetUnassignedTasks() throws Exception {
-        // Создаем нераспределенные задачи
         Task task1 = new Task();
         task1.setName("Нераспределенная 1");
         task1.setStatus(TaskStatus.NOT_ASSIGNED);
@@ -261,7 +258,6 @@ public class TaskControllerIntegrationTest extends BaseIntegrationTest {
         task2.setStatus(TaskStatus.NOT_ASSIGNED);
         taskRepository.save(task2);
 
-        // Создаем распределенную задачу
         User worker = getUserForRole(Role.WORKER);
         Task task3 = new Task();
         task3.setName("Распределенная");
@@ -278,7 +274,6 @@ public class TaskControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Автоматическое распределение задач")
     public void testDistributeTasks() throws Exception {
-        // Создаем нераспределенные задачи
         Task task1 = new Task();
         task1.setName("Задача 1");
         task1.setStatus(TaskStatus.NOT_ASSIGNED);

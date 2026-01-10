@@ -20,10 +20,10 @@ public class Workshop {
     private String description;
 
     @Column(name = "capacity")
-    private Integer capacity; // Вместимость цеха (количество человек)
+    private Integer capacity;
 
     @Column(name = "visit_duration_minutes")
-    private Integer visitDurationMinutes; // Стандартная длительность посещения в минутах
+    private Integer visitDurationMinutes;
 
     @OneToMany(mappedBy = "workshop", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore

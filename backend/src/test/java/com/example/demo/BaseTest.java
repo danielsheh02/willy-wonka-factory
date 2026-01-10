@@ -22,7 +22,7 @@ import java.util.Map;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public abstract class BaseIntegrationTest {
+public abstract class BaseTest {
 
     @Autowired
     protected MockMvc mockMvc;

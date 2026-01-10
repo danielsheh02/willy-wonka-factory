@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.dto.request.AuthUserRequestDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для AuthController")
-public class AuthControllerIntegrationTest extends BaseIntegrationTest {
+public class AuthControllerTest extends BaseTest {
 
     @Test
     @DisplayName("Успешная регистрация нового пользователя")
@@ -33,7 +33,7 @@ public class AuthControllerIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Регистрация с существующим username")
     public void testSignupWithExistingUsername() throws Exception {
         AuthUserRequestDTO requestDTO = new AuthUserRequestDTO();
-        requestDTO.setUsername("admin_user"); // Пользователь уже существует из BaseIntegrationTest
+        requestDTO.setUsername("admin_user");
         requestDTO.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/signup")

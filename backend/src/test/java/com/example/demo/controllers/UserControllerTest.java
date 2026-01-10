@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.dto.request.UserRequestDTO;
 import com.example.demo.models.Role;
 import com.example.demo.models.User;
@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для UserController")
-public class UserControllerIntegrationTest extends BaseIntegrationTest {
+public class UserControllerTest extends BaseTest {
 
     @Test
     @DisplayName("Получение всех пользователей с правами ADMIN")

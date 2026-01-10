@@ -79,7 +79,7 @@ public class SecurityConfig {
                         // Оборудование - создание/редактирование для FOREMAN, ADMIN, MASTER
                         .requestMatchers(HttpMethod.POST, "/api/equipments/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER")
                         .requestMatchers(HttpMethod.PUT, "/api/equipments/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/equipments/**").hasAnyRole("FOREMAN", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/equipments/**").hasAnyRole("FOREMAN", "ADMIN", "MASTER")
                         .requestMatchers(HttpMethod.GET, "/api/equipments/**").hasAnyRole("FOREMAN", "WORKER", "ADMIN", "MASTER", "GUIDE")
                         
                         // Цеха - только FOREMAN и ADMIN

@@ -52,7 +52,6 @@ public class DataInitializer implements CommandLineRunner {
         String rawPassword = "password";
         String encodedPassword = passwordEncoder.encode(rawPassword);
 
-        // Создаем пользователей всех ролей
         User worker1 = new User();
         worker1.setUsername("worker1");
         worker1.setPassword(encodedPassword);
@@ -83,6 +82,11 @@ public class DataInitializer implements CommandLineRunner {
         guide.setPassword(encodedPassword);
         guide.setRole(Role.GUIDE);
 
+        User guide2 = new User();
+        guide2.setUsername("guide2");
+        guide2.setPassword(encodedPassword);
+        guide2.setRole(Role.GUIDE);
+
         User unknown = new User();
         unknown.setUsername("unknown1");
         unknown.setPassword(encodedPassword);
@@ -94,6 +98,7 @@ public class DataInitializer implements CommandLineRunner {
         admin = userRepository.save(admin);
         master = userRepository.save(master);
         guide = userRepository.save(guide);
+        guide2 = userRepository.save(guide2);
         unknown = userRepository.save(unknown);
 
         worker1 = userRepository.findById(worker1.getId()).orElseThrow();
@@ -102,6 +107,7 @@ public class DataInitializer implements CommandLineRunner {
         admin = userRepository.findById(admin.getId()).orElseThrow();
         master = userRepository.findById(master.getId()).orElseThrow();
         guide = userRepository.findById(guide.getId()).orElseThrow();
+        guide2 = userRepository.findById(guide2.getId()).orElseThrow();
         unknown = userRepository.findById(unknown.getId()).orElseThrow();
 
         Task task1 = new Task();
@@ -162,6 +168,7 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("admin1 / password (ADMIN)");
         System.out.println("master1 / password (MASTER)");
         System.out.println("guide1 / password (GUIDE)");
+        System.out.println("guide2 / password (GUIDE)");
         System.out.println("unknown1 / password (UNKNOWN)");
         System.out.println("========================================");
 

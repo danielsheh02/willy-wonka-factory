@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.dto.request.EquipmentRequestDTO;
 import com.example.demo.models.Equipment;
 import com.example.demo.models.EquipmentStatus;
@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для EquipmentController")
-public class EquipmentControllerIntegrationTest extends BaseIntegrationTest {
+public class EquipmentControllerTest extends BaseTest {
 
     @Autowired
     private EquipmentRepository equipmentRepository;
@@ -39,7 +39,6 @@ public class EquipmentControllerIntegrationTest extends BaseIntegrationTest {
         equipmentRepository.deleteAll();
         workshopRepository.deleteAll();
         
-        // Создаем тестовый цех для оборудования
         testWorkshop = new Workshop();
         testWorkshop.setName("Тестовый цех");
         testWorkshop.setDescription("Цех для тестирования");

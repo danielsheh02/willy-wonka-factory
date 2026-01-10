@@ -46,7 +46,7 @@ echo ""
 echo -e "${YELLOW}[4/5] Запуск интеграционных тестов...${NC}"
 echo "=================================================="
 
-if ./gradlew test --tests "com.example.demo.controllers.*" --tests "BaseIntegrationTest" --info; then
+if ./gradlew test --tests "com.example.demo.controllers.*" --tests "BaseTest" --info; then
     echo ""
     echo -e "${GREEN}=================================================="
     echo "✓ Все тесты выполнены успешно!"

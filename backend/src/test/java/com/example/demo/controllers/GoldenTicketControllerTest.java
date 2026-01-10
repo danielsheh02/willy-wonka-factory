@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.dto.request.BookTicketRequestDTO;
 import com.example.demo.dto.request.GenerateTicketsRequestDTO;
 import com.example.demo.models.*;
@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для GoldenTicketController")
-public class GoldenTicketControllerIntegrationTest extends BaseIntegrationTest {
+public class GoldenTicketControllerTest extends BaseTest {
 
     @Autowired
     private GoldenTicketRepository goldenTicketRepository;
@@ -34,11 +34,9 @@ public class GoldenTicketControllerIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     public void setupBaseTest() {
         super.setupBaseTest();
-        // Важно: сначала удаляем билеты (child), потом экскурсии (parent)
         goldenTicketRepository.deleteAll();
         excursionRepository.deleteAll();
         
-        // Создаем тестовую экскурсию
         User guide = getUserForRole(Role.GUIDE);
         if (guide != null) {
             testExcursion = new Excursion();
@@ -63,7 +61,7 @@ public class GoldenTicketControllerIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalGenerated", is(5))) // Исправлено: API возвращает totalGenerated
+                .andExpect(jsonPath("$.totalGenerated", is(5)))
                 .andExpect(jsonPath("$.tickets", hasSize(5)));
     }
 
@@ -124,7 +122,7 @@ public class GoldenTicketControllerIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/tickets/validate/VALID001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid", is(true)))
-                .andExpect(jsonPath("$.ticket.ticketNumber", is("VALID001"))); // Исправлено: ticketNumber внутри объекта ticket
+                .andExpect(jsonPath("$.ticket.ticketNumber", is("VALID001")));
     }
 
     @Test

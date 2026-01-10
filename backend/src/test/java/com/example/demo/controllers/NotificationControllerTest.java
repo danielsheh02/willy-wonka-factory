@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.dto.request.NotificationRequestDTO;
 import com.example.demo.models.Notification;
 import com.example.demo.models.NotificationType;
@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для NotificationController")
-public class NotificationControllerIntegrationTest extends BaseIntegrationTest {
+public class NotificationControllerTest extends BaseTest {
 
     @Autowired
     private NotificationRepository notificationRepository;

@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.dto.request.ExcursionRequestDTO;
 import com.example.demo.models.*;
 import com.example.demo.repositories.ExcursionRepository;
@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для ExcursionController")
-public class ExcursionControllerIntegrationTest extends BaseIntegrationTest {
+public class ExcursionControllerTest extends BaseTest {
 
     @Autowired
     private ExcursionRepository excursionRepository;
@@ -35,11 +35,9 @@ public class ExcursionControllerIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     public void setupBaseTest() {
         super.setupBaseTest();
-        // Важно: сначала удаляем экскурсии (child), потом цеха (parent)
         excursionRepository.deleteAll();
         workshopRepository.deleteAll();
         
-        // Создаем тестовый цех для экскурсий
         testWorkshop = new Workshop();
         testWorkshop.setName("Шоколадный цех");
         testWorkshop.setDescription("Производство шоколада");
@@ -152,8 +150,7 @@ public class ExcursionControllerIntegrationTest extends BaseIntegrationTest {
         excursion.setGuide(guide);
         excursion.setStatus(ExcursionStatus.CONFIRMED);
         excursionRepository.save(excursion);
-
-        // Публичный доступ к GET /api/excursions
+        
         mockMvc.perform(get("/api/excursions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));

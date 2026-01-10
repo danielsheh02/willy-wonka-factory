@@ -248,7 +248,7 @@ export default function EquipmentPage() {
               pagination: {
                 paginationModel: {
                   page: 0,
-                  pageSize: 10,
+                  pageSize: 25,
                 },
               },
             }}
@@ -294,16 +294,16 @@ export default function EquipmentPage() {
             type="number" 
             required
             inputProps={{ min: 0, max: 100 }}
-            value={selected?.health || 0} 
-            onChange={e => setSelected(t => ({ ...t, health: parseInt(e.target.value) }))} 
+            value={selected?.health ?? ''} 
+            onChange={e => setSelected(t => ({ ...t, health: e.target.value === '' ? '' : parseInt(e.target.value) }))} 
           />
           <TextField 
             label="Температура" 
             margin="dense" 
             fullWidth 
             type="number" 
-            value={selected?.temperature || 0} 
-            onChange={e => setSelected(t => ({ ...t, temperature: parseFloat(e.target.value) }))} 
+            value={selected?.temperature ?? ''} 
+            onChange={e => setSelected(t => ({ ...t, temperature: e.target.value === '' ? '' : parseFloat(e.target.value) }))} 
           />
           <FormControl margin="dense" fullWidth required>
             <InputLabel>Цех</InputLabel>

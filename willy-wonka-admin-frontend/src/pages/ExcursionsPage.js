@@ -230,10 +230,12 @@ export default function ExcursionsPage() {
       return;
     }
 
+    const startTimeUTC = toUTCString(selectedExcursion.startTime);
+
     try {
       const { data } = await api.post(`${API_URL}/api/excursions/check-availability`, {
         excursionId: selectedExcursion.id, // Для редактирования
-        startTime: selectedExcursion.startTime,
+        startTime: startTimeUTC,
         participantsCount: selectedExcursion.participantsCount,
         guideId: guideId,
         routes: manualRoutes
@@ -492,6 +494,7 @@ export default function ExcursionsPage() {
               }}
             />
             <TextField
+              id="start-time-input"
               label="Дата и время начала"
               margin="dense"
               fullWidth
@@ -511,9 +514,9 @@ export default function ExcursionsPage() {
               type="number"
               required
               inputProps={{ min: 1 }}
-              value={selectedExcursion?.participantsCount || 10}
+              value={selectedExcursion?.participantsCount ?? ''}
               onChange={e => {
-                setSelectedExcursion(t => ({ ...t, participantsCount: parseInt(e.target.value) }));
+                setSelectedExcursion(t => ({ ...t, participantsCount: e.target.value === '' ? '' : parseInt(e.target.value) }));
                 setFormError("");
               }}
             />
@@ -687,8 +690,8 @@ export default function ExcursionsPage() {
                             type="number"
                             size="small"
                             sx={{ width: 100 }}
-                            value={route.durationMinutes || 15}
-                            onChange={e => handleRoutePointChange(index, 'durationMinutes', parseInt(e.target.value))}
+                            value={route.durationMinutes ?? ''}
+                            onChange={e => handleRoutePointChange(index, 'durationMinutes', e.target.value === '' ? '' : parseInt(e.target.value))}
                             inputProps={{ min: 5, max: 120 }}
                           />
                           <IconButton 
@@ -789,7 +792,7 @@ export default function ExcursionsPage() {
               pagination: {
                 paginationModel: {
                   page: 0,
-                  pageSize: 10,
+                  pageSize: 25,
                 },
               },
             }}
@@ -841,7 +844,7 @@ export default function ExcursionsPage() {
           {activeStep === 0 ? (
             <Button onClick={handleNext} variant="contained">Далее</Button>
           ) : (
-            <Button onClick={handleSave} variant="contained">
+            <Button onClick={handleSave} variant="contained" id="create-excursion-save-button">
               {selectedExcursion?.id ? "Обновить" : "Создать"}
             </Button>
           )}

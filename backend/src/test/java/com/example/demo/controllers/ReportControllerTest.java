@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.BaseIntegrationTest;
+import com.example.demo.BaseTest;
 import com.example.demo.models.*;
 import com.example.demo.repositories.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.*;
 
 @DisplayName("Интеграционные тесты для ReportController")
-public class ReportControllerIntegrationTest extends BaseIntegrationTest {
+public class ReportControllerTest extends BaseTest {
 
     @Autowired
     private TaskRepository taskRepository;
