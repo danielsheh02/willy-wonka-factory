@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@DisplayName("Интеграционные тесты для NotificationController")
+@DisplayName("Функциональные тесты для NotificationController")
 public class NotificationControllerTest extends BaseTest {
 
     @Autowired
@@ -56,7 +56,6 @@ public class NotificationControllerTest extends BaseTest {
     public void testGetMyUnreadNotifications() throws Exception {
         User worker = getUserForRole(Role.WORKER);
         
-        // Создаем прочитанное уведомление
         Notification read = new Notification();
         read.setUser(worker);
         read.setTitle("Прочитано");
@@ -65,7 +64,6 @@ public class NotificationControllerTest extends BaseTest {
         read.setIsRead(true);
         notificationRepository.save(read);
 
-        // Создаем непрочитанное уведомление
         Notification unread = new Notification();
         unread.setUser(worker);
         unread.setTitle("Непрочитано");
@@ -86,7 +84,6 @@ public class NotificationControllerTest extends BaseTest {
     public void testGetUnreadCount() throws Exception {
         User worker = getUserForRole(Role.WORKER);
         
-        // Создаем 3 непрочитанных уведомления
         for (int i = 0; i < 3; i++) {
             Notification notification = new Notification();
             notification.setUser(worker);
@@ -168,7 +165,6 @@ public class NotificationControllerTest extends BaseTest {
     public void testMarkAllAsRead() throws Exception {
         User worker = getUserForRole(Role.WORKER);
         
-        // Создаем несколько непрочитанных уведомлений
         for (int i = 0; i < 5; i++) {
             Notification notification = new Notification();
             notification.setUser(worker);
@@ -183,7 +179,6 @@ public class NotificationControllerTest extends BaseTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + getTokenForRole(Role.WORKER)))
                 .andExpect(status().isOk());
 
-        // Проверяем, что все уведомления отмечены как прочитанные
         mockMvc.perform(get("/api/notifications/my/unread/count")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + getTokenForRole(Role.WORKER)))
                 .andExpect(status().isOk())
@@ -206,7 +201,6 @@ public class NotificationControllerTest extends BaseTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + getTokenForRole(Role.WORKER)))
                 .andExpect(status().isNoContent());
 
-        // Проверяем, что уведомление удалено
         mockMvc.perform(get("/api/notifications/my")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + getTokenForRole(Role.WORKER)))
                 .andExpect(status().isOk())
@@ -218,7 +212,6 @@ public class NotificationControllerTest extends BaseTest {
     public void testGetMyNotificationsPaged() throws Exception {
         User worker = getUserForRole(Role.WORKER);
         
-        // Создаем 15 уведомлений
         for (int i = 0; i < 15; i++) {
             Notification notification = new Notification();
             notification.setUser(worker);
@@ -242,7 +235,6 @@ public class NotificationControllerTest extends BaseTest {
         User worker = getUserForRole(Role.WORKER);
         User admin = getUserForRole(Role.ADMIN);
         
-        // Создаем уведомление для worker'а
         Notification notification = new Notification();
         notification.setUser(worker);
         notification.setTitle("Для worker");
@@ -250,7 +242,6 @@ public class NotificationControllerTest extends BaseTest {
         notification.setType(NotificationType.INFO);
         notificationRepository.save(notification);
 
-        // Admin пытается получить свои уведомления (должен получить пустой список)
         mockMvc.perform(get("/api/notifications/my")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + getTokenForRole(Role.ADMIN)))
                 .andExpect(status().isOk())

@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@DisplayName("Интеграционные тесты для UserController")
+@DisplayName("Функциональные тесты для UserController")
 public class UserControllerTest extends BaseTest {
 
     @Test

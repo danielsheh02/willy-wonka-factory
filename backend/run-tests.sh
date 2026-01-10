@@ -3,7 +3,7 @@
 set -e
 
 echo "=================================================="
-echo "Willy Wonka Factory - Интеграционные Тесты"
+echo "Willy Wonka Factory - Функциональные Тесты"
 echo "=================================================="
 echo ""
 
@@ -43,7 +43,7 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
 fi
 
 echo ""
-echo -e "${YELLOW}[4/5] Запуск интеграционных тестов...${NC}"
+echo -e "${YELLOW}[4/5] Запуск функциональных тестов...${NC}"
 echo "=================================================="
 
 if ./gradlew test --tests "com.example.demo.controllers.*" --tests "BaseTest" --info; then

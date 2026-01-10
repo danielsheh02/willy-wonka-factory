@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@DisplayName("Интеграционные тесты для AuthController")
+@DisplayName("Функциональные тесты для AuthController")
 public class AuthControllerTest extends BaseTest {
 
     @Test

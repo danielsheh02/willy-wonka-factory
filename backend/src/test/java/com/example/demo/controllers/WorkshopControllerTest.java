@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@DisplayName("Интеграционные тесты для WorkshopController")
+@DisplayName("Функциональные тесты для WorkshopController")
 public class WorkshopControllerTest extends BaseTest {
 
     @Autowired

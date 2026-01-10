@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@DisplayName("Интеграционные тесты для ExcursionController")
+@DisplayName("Функциональные тесты для ExcursionController")
 public class ExcursionControllerTest extends BaseTest {
 
     @Autowired
