@@ -25,6 +25,10 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+docker-compose down
+sudo rm -rf ../pg-data/
+docker-compose up -d
+sleep 10
 
 cd "$(dirname "$0")"
 

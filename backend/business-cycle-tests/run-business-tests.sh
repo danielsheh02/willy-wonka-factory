@@ -16,6 +16,10 @@ echo -e "${BLUE}🎭 Тестирование бизнес-циклов${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
+docker-compose down
+sudo rm -rf ../pg-data/
+docker-compose up -d
+sleep 10
 
 cd "$(dirname "$0")"
 
