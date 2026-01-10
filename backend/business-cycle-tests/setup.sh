@@ -17,7 +17,6 @@ echo ""
 
 cd "$(dirname "$0")"
 
-# Проверка Python
 echo -e "${YELLOW}[1/4] Проверка Python...${NC}"
 if ! command -v python3 &> /dev/null; then
     echo -e "${RED}✗ Python 3 не установлен!${NC}"
@@ -29,7 +28,6 @@ PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
 echo -e "${GREEN}✓ Python ${PYTHON_VERSION} найден${NC}"
 echo ""
 
-# Проверка pip
 echo -e "${YELLOW}[2/4] Проверка pip...${NC}"
 if ! command -v pip3 &> /dev/null; then
     echo -e "${RED}✗ pip3 не установлен!${NC}"
@@ -38,7 +36,6 @@ fi
 echo -e "${GREEN}✓ pip3 найден${NC}"
 echo ""
 
-# Создание виртуального окружения
 echo -e "${YELLOW}[3/5] Создание виртуального окружения...${NC}"
 if [ ! -d "venv" ]; then
     python3 -m venv venv
@@ -53,7 +50,6 @@ else
 fi
 echo ""
 
-# Установка зависимостей
 echo -e "${YELLOW}[4/5] Установка зависимостей Python...${NC}"
 source venv/bin/activate
 pip install --upgrade pip
@@ -67,7 +63,6 @@ else
 fi
 echo ""
 
-# Проверка браузера
 echo -e "${YELLOW}[5/5] Проверка браузера...${NC}"
 CHROME_FOUND=false
 FIREFOX_FOUND=false
@@ -105,7 +100,6 @@ elif [ "$FIREFOX_FOUND" = true ]; then
 fi
 echo ""
 
-# Создание директорий
 mkdir -p screenshots reports
 
 echo -e "${BLUE}========================================${NC}"

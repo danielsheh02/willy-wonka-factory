@@ -72,8 +72,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/excursions/**").hasAnyRole("ADMIN", "GUIDE")
                         .requestMatchers(HttpMethod.DELETE, "/api/excursions/**").hasAnyRole("ADMIN", "GUIDE")
                         
-                        // Золотые билеты - только ADMIN может генерировать
+                        // Золотые билеты - только ADMIN может генерировать и удалять
                         .requestMatchers(HttpMethod.POST, "/api/tickets/generate").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/tickets/{id:[0-9]+}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/tickets/**").hasAnyRole("ADMIN", "GUIDE")
                         
                         // Оборудование - создание/редактирование для FOREMAN, ADMIN, MASTER

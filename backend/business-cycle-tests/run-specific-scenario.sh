@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Проверка аргумента
+
 if [ -z "$1" ]; then
     echo -e "${RED}Укажите номер сценария (1-5)${NC}"
     echo "Использование: ./run-specific-scenario.sh <номер>"
@@ -25,13 +25,13 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# Переход в директорию с тестами
+
 cd "$(dirname "$0")"
 
-# Создаем директории если не существуют
+
 mkdir -p screenshots reports
 
-# Активация виртуального окружения
+
 if [ ! -d "venv" ]; then
     echo -e "${RED}✗ Виртуальное окружение не найдено!${NC}"
     echo "Запустите ./setup.sh для настройки окружения"
@@ -39,7 +39,6 @@ if [ ! -d "venv" ]; then
 fi
 source venv/bin/activate
 
-# Определение файла теста
 case "$1" in
     1)
         TEST_FILE="test_scenario1_foreman_worker_tasks.py"
@@ -73,7 +72,6 @@ echo -e "${BLUE}🎭 Сценарий $1: ${SCENARIO_NAME}${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-# Информация о режиме запуска
 BROWSER="${BROWSER:-chrome}"
 HEADLESS="${HEADLESS:-false}"
 echo -e "Браузер: ${BROWSER}"
@@ -81,7 +79,6 @@ echo -e "Headless: ${HEADLESS}"
 echo -e "${YELLOW}ℹ Для переключения на Firefox: export BROWSER=firefox${NC}"
 echo ""
 
-# Запуск теста
 pytest "$TEST_FILE" --html=reports/"$(basename "$TEST_FILE" .py)"-report.html --self-contained-html --capture=tee-sys -v
 
 TEST_EXIT_CODE=$?
@@ -101,7 +98,6 @@ fi
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-# Деактивация виртуального окружения
 deactivate
 
 exit $TEST_EXIT_CODE

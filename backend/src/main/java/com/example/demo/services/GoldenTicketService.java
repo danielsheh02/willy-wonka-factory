@@ -244,6 +244,17 @@ public class GoldenTicketService {
     }
 
     /**
+     * Удалить билет полностью (только для админов)
+     */
+    @Transactional
+    public void deleteTicket(Long id) {
+        GoldenTicket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Билет не найден"));
+        
+        ticketRepository.delete(ticket);
+    }
+
+    /**
      * Деактивировать билеты для начавшихся экскурсий (фоновая задача)
      */
     @Transactional

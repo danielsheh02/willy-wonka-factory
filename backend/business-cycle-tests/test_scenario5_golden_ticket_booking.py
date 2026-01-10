@@ -8,6 +8,7 @@ from page_objects.login_page import LoginPage
 from page_objects.golden_tickets_page import GoldenTicketsPage
 from page_objects.excursions_page import ExcursionsPage
 from page_objects.public_booking_page import PublicBookingPage
+from datetime import datetime, timedelta
 import time
 
 
@@ -26,28 +27,27 @@ class TestGoldenTicketBooking:
         """
         timestamp = int(time.time())
         excursion_name = f"Экскурсия для бронирования {timestamp}"
+        start_time = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M")
         holder_name = "Чарли Бакет"
         holder_email = f"charlie_{timestamp}@example.com"
         
-        # ===== Этап 1: ADMIN входит и создает экскурсию =====
         login_page = LoginPage(driver)
         login_page.open()
         login_page.login(config.ADMIN_USERNAME, config.ADMIN_PASSWORD)
         time.sleep(2)
         
-        # Создаем экскурсию
         excursions_page = ExcursionsPage(driver)
         excursions_page.open()
         
         excursions_page.create_excursion_auto_route(
             name=excursion_name,
-            participants=20,
-            guide_username=config.GUIDE_USERNAME
+            participants=15,
+            guide_username=config.GUIDE_USERNAME,
+            start_time=start_time
         )
         
         print(f"✓ Экскурсия '{excursion_name}' создана")
         
-        # ===== Этап 2: Генерируем золотой билет =====
         tickets_page = GoldenTicketsPage(driver)
         tickets_page.open()
         
@@ -56,8 +56,6 @@ class TestGoldenTicketBooking:
         
         time.sleep(2)
         
-        # ===== Этап 3: Получаем номер билета через API =====
-        # Для простоты получаем билет через API
         try:
             response = requests.get(
                 f"{config.API_URL}/api/tickets",
@@ -67,7 +65,6 @@ class TestGoldenTicketBooking:
             if response.status_code == 200:
                 tickets = response.json()
                 if tickets and len(tickets) > 0:
-                    # Берем последний билет (только что созданный)
                     ticket_number = tickets[-1]["ticketNumber"]
                     print(f"✓ Получен номер билета: {ticket_number}")
                 else:
@@ -78,21 +75,16 @@ class TestGoldenTicketBooking:
             print(f"Ошибка при получении билета: {e}")
             pytest.skip("Не удалось получить билет")
         
-        # ===== Этап 4: Публичное бронирование =====
         booking_page = PublicBookingPage(driver)
         booking_page.open()
         
-        # Проверяем билет
         booking_page.check_ticket(ticket_number)
         time.sleep(2)
         
-        # Выбираем экскурсию
         booking_page.select_excursion(excursion_name)
         
-        # Заполняем информацию о держателе
         booking_page.book_with_holder_info(holder_name, holder_email)
         
-        # ===== Этап 5: Проверяем успешное бронирование =====
         is_successful = booking_page.is_booking_successful()
         
         assert is_successful, "Бронирование не было успешным - нет уведомления об успехе"

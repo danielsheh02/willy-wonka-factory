@@ -25,7 +25,6 @@ class TestEquipmentMaintenance:
         equipment_name = f"Тестовое оборудование {timestamp}"
         equipment_model = f"MODEL-{timestamp}"
         
-        # ===== Этап 1: MASTER входит в систему =====
         login_page = LoginPage(driver)
         login_page.open()
         login_page.login(config.MASTER_USERNAME, config.MASTER_PASSWORD)
@@ -34,9 +33,7 @@ class TestEquipmentMaintenance:
         equipment_page = EquipmentPage(driver)
         equipment_page.open()
         
-        # ===== Этап 2: MASTER создает оборудование =====
-        # Используем существующий цех из DataInitializer
-        workshop_name = "Цех упаковки"  # Существующий цех
+        workshop_name = "Цех упаковки"
         
         equipment_page.create_equipment(
             name=equipment_name,
@@ -45,13 +42,11 @@ class TestEquipmentMaintenance:
             workshop_name=workshop_name
         )
         
-        # Проверяем, что оборудование создано
         assert equipment_page.is_equipment_exists(equipment_name), \
             f"Оборудование '{equipment_name}' не найдено в таблице"
         
         print(f"✓ Оборудование '{equipment_name}' успешно создано")
         
-        # ===== Этап 3: MASTER редактирует оборудование =====
         new_health = 70
         new_temperature = 45
         
@@ -63,12 +58,10 @@ class TestEquipmentMaintenance:
         
         print(f"✓ Оборудование '{equipment_name}' успешно отредактировано")
         
-        # ===== Этап 4: MASTER удаляет оборудование =====
         equipment_page.delete_equipment(equipment_name)
         
         time.sleep(2)
         
-        # Проверяем, что оборудование удалено
         assert not equipment_page.is_equipment_exists(equipment_name), \
             f"Оборудование '{equipment_name}' все еще существует после удаления"
         

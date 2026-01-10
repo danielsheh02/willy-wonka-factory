@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import {
   Button, Box, Typography, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, Snackbar, Alert, Chip
+  DialogActions, TextField, Snackbar, Alert, Chip, IconButton
 } from "@mui/material";
+import DeleteIcon from '@mui/icons-material/Delete';
 import api, { API_URL } from "../api";
 import { usePermissions } from "../hooks/usePermissions";
 import { formatDate } from "../utils/dateUtils";
@@ -24,7 +25,7 @@ const statusColors = {
   CANCELLED: "error"
 };
 
-const columns = [
+const getColumns = (permissions, handleDeleteCallback) => [
   { field: "id", headerName: "ID", width: 70 },
   { field: "ticketNumber", headerName: "Номер билета", width: 130, flex: 0.5 },
   {
@@ -67,6 +68,28 @@ const columns = [
       if (!params.value) return "Бессрочно";
       return formatDate(params.value);
     }
+  },
+  {
+    field: "actions",
+    headerName: "Действия",
+    width: 80,
+    sortable: false,
+    renderCell: (params) => (
+      <Box>
+        {permissions.canGenerateTickets && (
+          <IconButton
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteCallback(params.row);
+            }}
+            title="Удалить"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        )}
+      </Box>
+    )
   }
 ];
 
@@ -78,6 +101,8 @@ export default function GoldenTicketsPage() {
   const [count, setCount] = useState(10);
   const [expiresInDays, setExpiresInDays] = useState("");
   const [notification, setNotification] = useState("");
+  const [ticketToDelete, setTicketToDelete] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -128,6 +153,36 @@ export default function GoldenTicketsPage() {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`${API_URL}/api/tickets/${id}`);
+      fetchTickets();
+      setNotification("Билет удалён");
+    } catch (err) {
+      console.error(err);
+      const errorMessage = err.response?.data?.error || "Ошибка при удалении билета";
+      setNotification(errorMessage);
+    }
+  };
+
+  const handleDeleteCallback = useCallback((ticket) => {
+    setTicketToDelete(ticket);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = async () => {
+    if (ticketToDelete) {
+      await handleDelete(ticketToDelete.id);
+      setDeleteDialogOpen(false);
+      setTicketToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setTicketToDelete(null);
+  };
+
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -147,7 +202,7 @@ export default function GoldenTicketsPage() {
       <Box sx={{ flexGrow: 1, minHeight: 0 }}>
         <DataGrid
           rows={tickets}
-          columns={columns}
+          columns={getColumns(permissions, handleDeleteCallback)}
           loading={loading}
           pageSizeOptions={[10, 25, 50, 100]}
           initialState={{
@@ -192,6 +247,27 @@ export default function GoldenTicketsPage() {
           <Button onClick={handleClose}>Отмена</Button>
           <Button onClick={handleGenerate} variant="contained">
             Сгенерировать
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог подтверждения удаления */}
+      <Dialog open={deleteDialogOpen} onClose={cancelDelete}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить билет <strong>{ticketToDelete?.ticketNumber}</strong>?
+          </Typography>
+          {ticketToDelete?.status === 'BOOKED' && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              Этот билет забронирован на экскурсию!
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete}>Отмена</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Удалить
           </Button>
         </DialogActions>
       </Dialog>

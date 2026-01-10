@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import api, { API_URL } from "../api";
 import { formatDateTime, parseUTCDate } from "../utils/dateUtils";
+import { useNavigate } from "react-router-dom";
 
 const steps = ["Введите номер билета", "Выберите экскурсию", "Введите данные", "Подтверждение"];
 
@@ -42,6 +43,8 @@ export default function PublicBookingPage() {
   const [bookingResult, setBookingResult] = useState(null);
   const [error, setError] = useState("");
   const [notification, setNotification] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (activeStep === 1) {
@@ -277,6 +280,15 @@ export default function PublicBookingPage() {
               disabled={loading || !ticketNumber}
             >
               {loading ? <CircularProgress size={24} /> : "Проверить билет"}
+            </Button>
+            <Button
+              sx={{ mt: 2 }}  
+              variant="contained"
+              fullWidth
+              size="small"
+              onClick={() => navigate("/login")}
+            >
+              {loading ? <CircularProgress size={24} /> : "Вход в систему"}
             </Button>
           </CardContent>
         </Card>
