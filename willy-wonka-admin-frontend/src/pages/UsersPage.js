@@ -22,14 +22,47 @@ export default function UsersPage() {
   const [notification, setNotification] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const fetchUsers = async () => {
     const { data } = await api.get(`${API_URL}/api/users`);
     setUsers(data);
   };
   useEffect(() => { fetchUsers(); }, []);
-  const handleOpen = (user) => { setSelected(user || { username: "", role: "WORKER", password: "" }); setOpen(true); };
-  const handleClose = () => { setOpen(false); setSelected(null); };
+  
+  const handleOpen = (user) => { 
+    setSelected(user || { username: "", role: "WORKER", password: "" }); 
+    setUsernameError("");
+    setPasswordError("");
+    setOpen(true); 
+  };
+  
+  const handleClose = () => { 
+    setOpen(false); 
+    setSelected(null); 
+    setUsernameError("");
+    setPasswordError("");
+  };
+  
+  const validateUsername = (value) => {
+    if (value && value.length < 4) {
+      setUsernameError("Логин должен содержать минимум 4 символа");
+      return false;
+    }
+    setUsernameError("");
+    return true;
+  };
+
+  const validatePassword = (value) => {
+    if (value && value.length < 4) {
+      setPasswordError("Пароль должен содержать минимум 4 символа");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
+
   const handleSave = async () => {
     // Валидация обязательных полей
     if (!selected.username || !selected.role) {
@@ -37,9 +70,21 @@ export default function UsersPage() {
       return;
     }
     
+    // Валидация длины username
+    if (selected.username.length < 4) {
+      setNotification("Логин должен содержать минимум 4 символа!");
+      return;
+    }
+    
     // При создании пароль обязателен
     if (!selected.id && !selected.password) {
       setNotification("Укажите пароль для нового пользователя!");
+      return;
+    }
+    
+    // Валидация длины password при создании
+    if (!selected.id && selected.password.length < 4) {
+      setNotification("Пароль должен содержать минимум 4 символа!");
       return;
     }
     
@@ -209,7 +254,14 @@ export default function UsersPage() {
             fullWidth 
             required
             value={selected?.username || ""} 
-            onChange={e => setSelected(u => ({ ...u, username: e.target.value }))} 
+            onChange={e => {
+              const value = e.target.value;
+              setSelected(u => ({ ...u, username: value }));
+              validateUsername(value);
+            }}
+            error={!!usernameError}
+            helperText={usernameError || "Минимум 4 символа"}
+            inputProps={{ minLength: 4 }}
           />
           <FormControl margin="dense" fullWidth required>
             <InputLabel>Роль</InputLabel>
@@ -229,14 +281,32 @@ export default function UsersPage() {
               type="password" 
               required
               value={selected?.password || ""} 
-              onChange={e => setSelected(u => ({ ...u, password: e.target.value }))} 
+              onChange={e => {
+                const value = e.target.value;
+                setSelected(u => ({ ...u, password: value }));
+                validatePassword(value);
+              }}
+              error={!!passwordError}
+              helperText={passwordError || "Минимум 4 символа"}
+              inputProps={{ minLength: 4 }}
             />
           )}
         </DialogContent>
         <DialogActions>
           {selected?.id && <Button color="error" onClick={() => { handleDelete(selected.id); handleClose(); }}>Удалить</Button>}
           <Button onClick={handleClose}>Отмена</Button>
-          <Button onClick={handleSave} variant="contained">Сохранить</Button>
+          <Button 
+            onClick={handleSave} 
+            variant="contained"
+            disabled={
+              !!usernameError || 
+              !!passwordError || 
+              (selected?.username && selected.username.length < 4) ||
+              (!selected?.id && selected?.password && selected.password.length < 4)
+            }
+          >
+            Сохранить
+          </Button>
         </DialogActions>
       </Dialog>
       {/* Диалог подтверждения удаления */}
