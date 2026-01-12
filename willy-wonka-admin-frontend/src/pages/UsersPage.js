@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, MenuItem, FormControl, InputLabel, Select, IconButton } from "@mui/material";
+import { Button, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, MenuItem, FormControl, InputLabel, Select, IconButton, InputAdornment } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import api, { API_URL } from "../api";
 import { usePermissions } from "../hooks/usePermissions";
 
@@ -24,6 +25,10 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const fetchUsers = async () => {
     const { data } = await api.get(`${API_URL}/api/users`);
@@ -35,6 +40,10 @@ export default function UsersPage() {
     setSelected(user || { username: "", role: "WORKER", password: "" }); 
     setUsernameError("");
     setPasswordError("");
+    setConfirmPassword("");
+    setConfirmPasswordError("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setOpen(true); 
   };
   
@@ -43,6 +52,10 @@ export default function UsersPage() {
     setSelected(null); 
     setUsernameError("");
     setPasswordError("");
+    setConfirmPassword("");
+    setConfirmPasswordError("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
   
   const validateUsername = (value) => {
@@ -60,6 +73,15 @@ export default function UsersPage() {
       return false;
     }
     setPasswordError("");
+    return true;
+  };
+
+  const validateConfirmPassword = (value) => {
+    if (value !== selected?.password) {
+      setConfirmPasswordError("Пароли не совпадают");
+      return false;
+    }
+    setConfirmPasswordError("");
     return true;
   };
 
@@ -85,6 +107,12 @@ export default function UsersPage() {
     // Валидация длины password при создании
     if (!selected.id && selected.password.length < 4) {
       setNotification("Пароль должен содержать минимум 4 символа!");
+      return;
+    }
+    
+    // Валидация совпадения паролей при создании
+    if (!selected.id && selected.password !== confirmPassword) {
+      setNotification("Пароли не совпадают!");
       return;
     }
     
@@ -274,22 +302,69 @@ export default function UsersPage() {
             </Select>
           </FormControl>
           {!selected?.id && (
-            <TextField 
-              label="Пароль" 
-              margin="dense" 
-              fullWidth 
-              type="password" 
-              required
-              value={selected?.password || ""} 
-              onChange={e => {
-                const value = e.target.value;
-                setSelected(u => ({ ...u, password: value }));
-                validatePassword(value);
-              }}
-              error={!!passwordError}
-              helperText={passwordError || "Минимум 4 символа"}
-              inputProps={{ minLength: 4 }}
-            />
+            <>
+              <TextField 
+                label="Пароль" 
+                margin="dense" 
+                fullWidth 
+                type={showPassword ? "text" : "password"}
+                required
+                value={selected?.password || ""} 
+                onChange={e => {
+                  const value = e.target.value;
+                  setSelected(u => ({ ...u, password: value }));
+                  validatePassword(value);
+                  if (confirmPassword) {
+                    validateConfirmPassword(confirmPassword);
+                  }
+                }}
+                error={!!passwordError}
+                helperText={passwordError || "Минимум 4 символа"}
+                inputProps={{ minLength: 4 }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        aria-label="toggle password visibility"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField 
+                label="Повторите пароль" 
+                margin="dense" 
+                fullWidth 
+                type={showConfirmPassword ? "text" : "password"}
+                required
+                value={confirmPassword || ""} 
+                onChange={e => {
+                  const value = e.target.value;
+                  setConfirmPassword(value);
+                  validateConfirmPassword(value);
+                }}
+                error={!!confirmPasswordError}
+                helperText={confirmPasswordError || "Введите пароль еще раз"}
+                inputProps={{ minLength: 4 }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        edge="end"
+                        aria-label="toggle confirm password visibility"
+                      >
+                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </>
           )}
         </DialogContent>
         <DialogActions>
@@ -301,8 +376,11 @@ export default function UsersPage() {
             disabled={
               !!usernameError || 
               !!passwordError || 
+              !!confirmPasswordError ||
               (selected?.username && selected.username.length < 4) ||
-              (!selected?.id && selected?.password && selected.password.length < 4)
+              (!selected?.id && selected?.password && selected.password.length < 4) ||
+              (!selected?.id && confirmPassword && confirmPassword.length < 4) ||
+              (!selected?.id && selected?.password !== confirmPassword)
             }
           >
             Сохранить

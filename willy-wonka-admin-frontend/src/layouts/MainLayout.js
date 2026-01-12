@@ -31,7 +31,7 @@ export default function MainLayout() {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Willy Wonka Admin
+            Willy Wonka Factory
           </Typography>
           {filteredNavItems.map((item) => (
             <Button
