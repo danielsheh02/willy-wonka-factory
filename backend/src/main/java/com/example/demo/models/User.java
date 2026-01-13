@@ -32,6 +32,10 @@ public class User {
     @JsonIgnore
     private Set<WorkshopToUser> workshopLinks = new HashSet<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Set<Notification> notifications = new HashSet<>();
+
     @Column(name = "is_banned")
     private Boolean isBanned = false;
 

@@ -31,7 +31,7 @@ const getColumns = (permissions, handleDeleteCallback) => [
   {
     field: "status",
     headerName: "Статус",
-    width: 140,
+    width: 170,
     renderCell: (params) => (
       <Chip
         label={statusLabels[params.value] || params.value}

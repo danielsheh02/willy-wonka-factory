@@ -279,7 +279,7 @@ export default function PublicBookingPage() {
               onClick={handleValidateTicket}
               disabled={loading || !ticketNumber}
             >
-              {loading ? <CircularProgress size={24} /> : "Проверить билет"}
+              {loading ? <CircularProgress size={24} /> : "Записаться на экскурсию"}
             </Button>
             <Button
               sx={{ mt: 2 }}  
@@ -330,11 +330,11 @@ export default function PublicBookingPage() {
                                 👥 {excursion.participantsCount} мест
                               </Typography>
                               {" • "}
-                              <Chip
+                              {/* <Chip
                                 label={statusLabels[excursion.status] || excursion.status}
                                 color={statusColors[excursion.status] || "default"}
                                 size="small"
-                              />
+                              /> */}
                             </>
                           }
                         />

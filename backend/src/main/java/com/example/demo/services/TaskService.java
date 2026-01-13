@@ -88,11 +88,11 @@ public class TaskService {
         task.setName(dto.getName());
         task.setDescription(dto.getDescription());
         
-        // Если рабочий не указан, автоматически ставим статус NOT_ASSIGNED
+        // Автоматически устанавливаем статус в зависимости от наличия пользователя
         if (user == null) {
             task.setStatus(TaskStatus.NOT_ASSIGNED);
         } else {
-            task.setStatus(dto.getStatus());
+            task.setStatus(TaskStatus.ASSIGNED);
         }
         
         task.setUser(user);
@@ -197,9 +197,9 @@ public class TaskService {
             throw new WorkerOverloadedException("Вы достигли лимита активных задач (" + MAX_ALLOWED_TASKS + ")");
         }
 
-        // Назначаем задачу и меняем статус на IN_PROGRESS
+        // Назначаем задачу и меняем статус на ASSIGNED
         task.setUser(user);
-        task.setStatus(TaskStatus.IN_PROGRESS);
+        task.setStatus(TaskStatus.ASSIGNED);
 
         Task savedTask = taskRepository.save(task);
 
@@ -305,7 +305,7 @@ public class TaskService {
                 
                 // Назначаем задачу
                 task.setUser(worker);
-                task.setStatus(TaskStatus.IN_PROGRESS);
+                task.setStatus(TaskStatus.ASSIGNED);
                 taskRepository.save(task);
                 
                 // Обновляем загруженность

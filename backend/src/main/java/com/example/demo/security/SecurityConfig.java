@@ -52,19 +52,19 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/webjars/**",
-                                "/api/auth/signin",
-                                "/api/auth/signup",
-                                // Публичные endpoints для золотых билетов и бронирования
-                                "/api/tickets/validate/**",
-                                "/api/tickets/book",
-                                "/api/tickets/*/cancel",
-                                "/actuator/**")
-                        .permitAll()
+                            .requestMatchers(
+                                    "/swagger-ui/**",
+                                    "/v3/api-docs/**",
+                                    "/swagger-resources/**",
+                                    "/webjars/**",
+                                    "/api/auth/signin",
+                                    "/api/auth/signup",
+                                    // Публичные endpoints для золотых билетов и бронирования
+                                    "/api/tickets/validate/**",
+                                    "/api/tickets/book",
+                                    "/api/tickets/*/cancel",
+                                    "/actuator/**")
+                            .permitAll()
                         
                         // Экскурсии - просмотр для всех, управление только для ADMIN и GUIDE
                         .requestMatchers(HttpMethod.GET, "/api/excursions/**").permitAll()
@@ -111,7 +111,8 @@ public class SecurityConfig {
                         // Остальные GET запросы
                         .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll())
                 .addFilterBefore(oncePerRequestFilterImpl, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

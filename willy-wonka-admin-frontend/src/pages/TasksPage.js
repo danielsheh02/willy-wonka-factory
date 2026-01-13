@@ -78,9 +78,15 @@ export default function TasksPage() {
   const handleClose = () => { setOpen(false); setSelectedTask(null); };
 
   const handleSave = async () => {
-    // Валидация обязательных полей (userId теперь необязателен)
-    if (!selectedTask.name || !selectedTask.status) {
+    // Валидация обязательных полей
+    if (!selectedTask.name) {
       setNotification("Заполните все обязательные поля!");
+      return;
+    }
+    
+    // При редактировании статус обязателен
+    if (selectedTask.id && !selectedTask.status) {
+      setNotification("Укажите статус задачи!");
       return;
     }
     
@@ -90,10 +96,14 @@ export default function TasksPage() {
     const dataToSend = {
       name: selectedTask.name,
       description: selectedTask.description,
-      status: selectedTask.status,
       userId: userId,
       force: selectedTask.force || false
     };
+    
+    // Добавляем статус только при редактировании (при создании статус устанавливается автоматически)
+    if (selectedTask.id) {
+      dataToSend.status = selectedTask.status;
+    }
     
     try {
       if (selectedTask.id) {
@@ -208,12 +218,14 @@ export default function TasksPage() {
       renderCell: (params) => {
         const statusColors = {
           'NOT_ASSIGNED': 'default',
+          'ASSIGNED': 'info',
           'IN_PROGRESS': 'primary',
           'COMPLETED': 'success'
         };
         
         const statusLabels = {
           'NOT_ASSIGNED': 'Не назначена',
+          'ASSIGNED': 'Назначена',
           'IN_PROGRESS': 'В работе',
           'COMPLETED': 'Завершена'
         };
@@ -431,16 +443,37 @@ export default function TasksPage() {
               </FormControl>
             )}
           </Box>
-          <FormControl margin="dense" fullWidth required>
-            <InputLabel>Статус</InputLabel>
-            <Select 
-              value={selectedTask?.status || ""} 
-              onChange={e => setSelectedTask(t => ({ ...t, status: e.target.value }))} 
-              label="Статус"
-            >
-              {statuses.map(st => <MenuItem value={st} key={st}>{st}</MenuItem>)}
-            </Select>
-          </FormControl>
+          {selectedTask?.id ? (
+            <FormControl margin="dense" fullWidth required>
+              <InputLabel>Статус</InputLabel>
+              <Select 
+                value={selectedTask?.status || ""} 
+                onChange={e => setSelectedTask(t => ({ ...t, status: e.target.value }))} 
+                label="Статус"
+              >
+                {statuses.map(st => {
+                  const statusLabels = {
+                    'NOT_ASSIGNED': 'Не назначена',
+                    'ASSIGNED': 'Назначена',
+                    'IN_PROGRESS': 'В работе',
+                    'COMPLETED': 'Завершена'
+                  };
+                  return (
+                    <MenuItem value={st} key={st}>
+                      {statusLabels[st] || st}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2, mb: 1, fontStyle: 'italic' }}>
+              ℹ️ Статус будет установлен автоматически: 
+              {(selectedTask?.userId || selectedTask?.user?.id) 
+                ? ' "Назначена"' 
+                : ' "Не назначена"'}
+            </Typography>
+          )}
           
           {selectedTask?.userId && (
             <FormControlLabel
